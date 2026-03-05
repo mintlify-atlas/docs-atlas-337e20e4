@@ -1,0 +1,113 @@
+{
+  "projectType": "saas",
+  "projectName": "KeyBox",
+  "projectDescription": "A license key manager that generates, validates, and revokes access to your software",
+  "theme": "aspen",
+  "primaryColor": "#26588e",
+  "lightColor": "#9dcadb",
+  "darkColor": null,
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "introduction",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/how-it-works",
+              "concepts/license-lifecycle",
+              "concepts/machine-binding"
+            ]
+          },
+          {
+            "group": "Dashboard",
+            "pages": [
+              "dashboard/overview",
+              "dashboard/managing-clients",
+              "dashboard/managing-projects",
+              "dashboard/creating-licenses"
+            ]
+          },
+          {
+            "group": "SDKs",
+            "pages": [
+              "sdks/overview",
+              "sdks/node-sdk",
+              "sdks/python-sdk",
+              "sdks/dotnet-sdk"
+            ]
+          },
+          {
+            "group": "Deployment",
+            "pages": [
+              "deployment/backend-setup",
+              "deployment/frontend-setup",
+              "deployment/environment-variables"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "api/overview",
+              "api/authentication"
+            ]
+          },
+          {
+            "group": "License Management",
+            "pages": [
+              "api/validate-license",
+              "api/activate-license",
+              "api/create-license",
+              "api/revoke-license"
+            ]
+          },
+          {
+            "group": "Resources",
+            "pages": [
+              "api/clients",
+              "api/projects",
+              "api/dashboard"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "License key generation and management",
+    "Real-time license validation with Redis caching",
+    "Machine-binding for single-device activation",
+    "Automatic license expiration and revocation",
+    "Multi-language SDK support (Node.js, Python, .NET)",
+    "Background daemon for continuous validation",
+    "Dashboard for client and project management",
+    "OAuth integration for user authentication"
+  ],
+  "publicApiSurface": [
+    "POST /validate - Validate license key",
+    "POST /validate/activate - Activate license on machine",
+    "POST /license/create - Create new license",
+    "PATCH /license/revoke/:key - Revoke license",
+    "activateLicense() - Node.js SDK",
+    "startLicenseDaemon() - Node.js SDK",
+    "protectNodeApp() - Node.js SDK",
+    "activate_license() - Python SDK",
+    "start_license_daemon() - Python SDK",
+    "protect_fastapi_app() - Python SDK",
+    "ActivateLicenseAsync() - .NET SDK",
+    "StartLicenseDaemonAsync() - .NET SDK",
+    "RunProtectedAsync() - .NET SDK"
+  ]
+}
