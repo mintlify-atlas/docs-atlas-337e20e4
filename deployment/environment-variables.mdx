@@ -1,0 +1,543 @@
+---
+title: Environment Variables
+description: Complete reference for all KeyBox environment variables
+---
+
+This page provides a comprehensive reference for all environment variables used in KeyBox's backend and frontend applications.
+
+## Backend Environment Variables
+
+Configure these variables in `apps/server/.env`
+
+### Required Variables
+
+<CodeGroup>
+```bash .env
+# MongoDB Connection
+MONGO_URI=mongodb://localhost:27017/keyboxDB
+
+# Server Port
+PORT=5000
+
+# JWT Secret for Token Signing
+JWT_SECRET=your_jwt_secret_key_min_32_chars
+
+# License Key Encryption Secret
+LICENSE_SECRET_KEY=your_license_secret_key_min_32_chars
+
+# Frontend URL for CORS and OAuth Redirects
+FRONTEND_URL=http://localhost:3000
+```
+
+```bash .env.example
+GOOGLE_CLIENT_ID=YOUR_GOOGLE_CLIENT_ID
+GOOGLE_CLIENT_SECRET=YOUR_GOOGLE-CLIENT_SECRET
+GOOGLE_CALLBACK_URL=http://localhost:5000/auth/google/callback
+MONGO_URI=mongodb://localhost:27017/keyboxDB
+PORT=5000
+JWT_SECRET=supersecretkey
+LICENSE_SECRET_KEY=your_very_strong_secret_key_here
+FRONTEND_URL=http://localhost:3000
+```
+</CodeGroup>
+
+### MongoDB Configuration
+
+<Accordion title="MONGO_URI">
+  **Type:** String (Required)
+  
+  MongoDB connection string for the KeyBox database.
+  
+  **Development:**
+  ```bash
+  MONGO_URI=mongodb://localhost:27017/keyboxDB
+  ```
+  
+  **Production (MongoDB Atlas):**
+  ```bash
+  MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/keyboxDB?retryWrites=true&w=majority
+  ```
+  
+  **Docker:**
+  ```bash
+  MONGO_URI=mongodb://mongo:27017/keyboxDB
+  ```
+  
+  <Note>
+    The database name `keyboxDB` can be customized to any name you prefer.
+  </Note>
+  
+  **Connection Options:**
+  - Server selection timeout is set to 5000ms in the code
+  - The application will exit if MongoDB connection fails
+  - Mongoose will create collections automatically
+</Accordion>
+
+### Authentication & Security
+
+<Accordion title="JWT_SECRET">
+  **Type:** String (Required)
+  
+  Secret key for signing and verifying JWT tokens used for user authentication.
+  
+  ```bash
+  JWT_SECRET=your_jwt_secret_key_min_32_chars
+  ```
+  
+  <Warning>
+    **Security Requirements:**
+    - Minimum 32 characters
+    - Use a cryptographically secure random string
+    - Never commit this to version control
+    - Change immediately if compromised
+    - Use different values for dev/staging/production
+  </Warning>
+  
+  **Generate a secure secret:**
+  ```bash
+  # Using Node.js
+  node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+  
+  # Using OpenSSL
+  openssl rand -hex 32
+  ```
+  
+  **Used in:**
+  - `src/controllers/auth.controller.ts` - Login token generation
+  - `src/middleware/jwt.ts` - Token verification
+  - `src/routes/googleAuth.routes.ts` - OAuth callback tokens
+</Accordion>
+
+<Accordion title="SESSION_SECRET">
+  **Type:** String (Optional)
+  
+  Secret for Express session middleware (used for OAuth flows).
+  
+  ```bash
+  SESSION_SECRET=your_session_secret_key
+  ```
+  
+  **Default:** `"your-session-secret"`
+  
+  <Note>
+    While optional, you should set this to a unique value in production.
+  </Note>
+  
+  **Used in:**
+  - `src/app.ts` - Express session configuration
+</Accordion>
+
+<Accordion title="LICENSE_SECRET_KEY">
+  **Type:** String (Required)
+  
+  Secret key used for encrypting and validating license keys.
+  
+  ```bash
+  LICENSE_SECRET_KEY=your_very_strong_secret_key_here
+  ```
+  
+  <Warning>
+    **Critical:** This key is used to generate license keys. If you change this key, all previously generated licenses will become invalid.
+  </Warning>
+  
+  **Security recommendations:**
+  - Minimum 32 characters
+  - Store securely (use secret management service)
+  - Backup this value before rotating
+  - Use same value across all environments handling same licenses
+</Accordion>
+
+### Google OAuth Configuration
+
+<Accordion title="GOOGLE_CLIENT_ID">
+  **Type:** String (Required for OAuth)
+  
+  Google OAuth 2.0 Client ID from Google Cloud Console.
+  
+  ```bash
+  GOOGLE_CLIENT_ID=123456789-abcdefghijklmnop.apps.googleusercontent.com
+  ```
+  
+  **How to obtain:**
+  1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+  2. Create or select a project
+  3. Enable Google+ API
+  4. Go to Credentials → Create Credentials → OAuth 2.0 Client ID
+  5. Set application type to "Web application"
+  6. Copy the Client ID
+  
+  **Used in:**
+  - `src/config/googleStrategy.ts` - Passport Google OAuth strategy
+</Accordion>
+
+<Accordion title="GOOGLE_CLIENT_SECRET">
+  **Type:** String (Required for OAuth)
+  
+  Google OAuth 2.0 Client Secret from Google Cloud Console.
+  
+  ```bash
+  GOOGLE_CLIENT_SECRET=GOCSPX-abc123def456
+  ```
+  
+  <Warning>
+    Keep this secret secure. Never expose it in client-side code or commit to version control.
+  </Warning>
+  
+  **Used in:**
+  - `src/config/googleStrategy.ts` - Passport Google OAuth strategy
+</Accordion>
+
+<Accordion title="GOOGLE_CALLBACK_URL">
+  **Type:** String (Required for OAuth)
+  
+  Callback URL for Google OAuth redirects.
+  
+  ```bash
+  # Development
+  GOOGLE_CALLBACK_URL=http://localhost:5000/auth/google/callback
+  
+  # Production
+  GOOGLE_CALLBACK_URL=https://api.yourdomain.com/auth/google/callback
+  ```
+  
+  <Note>
+    This URL must be registered in Google Cloud Console under "Authorized redirect URIs".
+  </Note>
+  
+  **Used in:**
+  - `src/config/googleStrategy.ts` - OAuth callback configuration
+</Accordion>
+
+### Server Configuration
+
+<Accordion title="PORT">
+  **Type:** Number (Optional)
+  
+  Port number the server listens on.
+  
+  ```bash
+  PORT=5000
+  ```
+  
+  **Default:** `8000`
+  
+  **Common values:**
+  - Development: `5000` or `8000`
+  - Production: `80` (HTTP) or `443` (HTTPS)
+  - Cloud platforms often set this automatically
+  
+  **Used in:**
+  - `src/server.ts` - Server startup
+</Accordion>
+
+<Accordion title="FRONTEND_URL">
+  **Type:** String (Required)
+  
+  URL of the frontend application for CORS and OAuth redirects.
+  
+  ```bash
+  # Development
+  FRONTEND_URL=http://localhost:3000
+  
+  # Production
+  FRONTEND_URL=https://yourdomain.com
+  ```
+  
+  **Used in:**
+  - `src/routes/googleAuth.routes.ts` - OAuth success redirects
+  - CORS configuration (currently set to `*`, should be restricted in production)
+  
+  <Warning>
+    In production, update `src/app.ts` to use this variable for CORS instead of `*`:
+    
+    ```typescript
+    app.use(cors({
+      origin: process.env.FRONTEND_URL,
+      credentials: true,
+    }));
+    ```
+  </Warning>
+</Accordion>
+
+### Redis Configuration
+
+<Accordion title="REDIS_PASSWORD">
+  **Type:** String (Optional)
+  
+  Password for Redis authentication.
+  
+  ```bash
+  REDIS_PASSWORD=your_redis_password
+  ```
+  
+  **Note:** The Redis host and port are currently hardcoded in `src/lib/redis.ts`:
+  - Host: `redis-10357.c212.ap-south-1-1.ec2.cloud.redislabs.com`
+  - Port: `10357`
+  
+  To make these configurable, add environment variables:
+  ```bash
+  REDIS_HOST=your-redis-host.com
+  REDIS_PORT=6379
+  REDIS_PASSWORD=your_password
+  ```
+  
+  **Used in:**
+  - `src/lib/redis.ts` - Redis client configuration
+</Accordion>
+
+### Optional Configuration
+
+<Accordion title="NODE_ENV">
+  **Type:** String (Optional)
+  
+  Environment mode for the application.
+  
+  ```bash
+  NODE_ENV=production
+  ```
+  
+  **Values:**
+  - `development` - Development mode
+  - `test` - Testing mode (disables certain middleware)
+  - `production` - Production mode
+  
+  **Effects:**
+  - Controls database middleware in `src/app.ts`
+  - Affects MongoDB transactions in `src/controllers/project.controller.ts`
+  - Changes logging behavior
+  
+  **Used in:**
+  - `src/app.ts` - Conditional middleware loading
+  - `src/tests/setup.ts` - Test environment configuration
+</Accordion>
+
+## Frontend Environment Variables
+
+Configure these variables in `apps/web/.env.local`
+
+### Required Variables
+
+<Accordion title="NEXT_PUBLIC_API_URL">
+  **Type:** String (Required)
+  
+  Base URL of the backend API server.
+  
+  ```bash
+  # Development
+  NEXT_PUBLIC_API_URL=http://localhost:5000/
+  
+  # Production
+  NEXT_PUBLIC_API_URL=https://api.yourdomain.com/
+  ```
+  
+  <Warning>
+    **Important:**
+    - Must include the `NEXT_PUBLIC_` prefix to be accessible in the browser
+    - Must end with a trailing slash `/`
+    - Must be set at build time (not runtime)
+  </Warning>
+  
+  **Used in:**
+  - `lib/api.ts` - Axios base URL configuration
+  - `app/api/axiosInstance.ts` - Alternative Axios instance
+  - OAuth redirect URLs in login/signup pages
+  
+  **Environment-specific setup:**
+  
+  ```bash
+  # .env.local (development)
+  NEXT_PUBLIC_API_URL=http://localhost:5000/
+  
+  # .env.production (production)
+  NEXT_PUBLIC_API_URL=https://api.yourdomain.com/
+  
+  # .env.test (testing)
+  NEXT_PUBLIC_API_URL=http://localhost:5001/
+  ```
+</Accordion>
+
+## Environment Files
+
+### Backend Files
+
+```bash
+apps/server/
+├── .env                 # Your local configuration (gitignored)
+├── .env.example         # Template with dummy values (committed)
+├── .env.development     # Development-specific (optional)
+├── .env.production      # Production-specific (optional)
+└── .env.test            # Test environment (optional)
+```
+
+### Frontend Files
+
+```bash
+apps/web/
+├── .env.local           # Your local configuration (gitignored)
+├── .env.development     # Development-specific (optional)
+├── .env.production      # Production-specific (optional)
+└── .env.test            # Test environment (optional)
+```
+
+## Environment Variable Priority
+
+Next.js loads environment variables in this order (highest priority first):
+
+1. `.env.$(NODE_ENV).local`
+2. `.env.local` (not loaded when `NODE_ENV=test`)
+3. `.env.$(NODE_ENV)`
+4. `.env`
+
+## Security Best Practices
+
+<Warning>
+  **Critical security guidelines:**
+  
+  1. **Never commit secrets to Git**
+     - Add `.env` to `.gitignore`
+     - Use `.env.example` with dummy values
+  
+  2. **Use strong, unique secrets**
+     - Minimum 32 characters for JWT/session secrets
+     - Use cryptographically random values
+  
+  3. **Rotate secrets regularly**
+     - Change secrets every 90 days
+     - Rotate immediately if compromised
+  
+  4. **Use different values per environment**
+     - Dev, staging, and production should have unique secrets
+  
+  5. **Use secret management services**
+     - AWS Secrets Manager
+     - HashiCorp Vault
+     - Vercel Environment Variables
+     - Railway/Render environment management
+  
+  6. **Limit access**
+     - Only grant access to team members who need it
+     - Use role-based access control
+  
+  7. **Backup critical secrets**
+     - Especially `LICENSE_SECRET_KEY`
+     - Store securely (password manager, vault)
+</Warning>
+
+## Deployment Platform Configuration
+
+### Vercel
+
+1. Go to Project Settings → Environment Variables
+2. Add each variable with its value
+3. Select environments (Production, Preview, Development)
+4. Redeploy to apply changes
+
+### Railway/Render
+
+1. Go to your service/app settings
+2. Navigate to Environment Variables section
+3. Add variables as key-value pairs
+4. Save and redeploy
+
+### Docker
+
+Pass environment variables via:
+
+**Docker run:**
+```bash
+docker run --env-file .env keybox-server
+```
+
+**Docker Compose:**
+```yaml
+services:
+  backend:
+    image: keybox-server
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+```
+
+### Kubernetes
+
+**ConfigMap for non-sensitive data:**
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keybox-config
+data:
+  PORT: "5000"
+  FRONTEND_URL: "https://keybox.example.com"
+```
+
+**Secret for sensitive data:**
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: keybox-secrets
+type: Opaque
+stringData:
+  JWT_SECRET: "your_jwt_secret"
+  MONGO_URI: "mongodb://..."
+```
+
+## Validation
+
+Add runtime validation for critical environment variables:
+
+```typescript
+// validate-env.ts
+const requiredEnvVars = [
+  'MONGO_URI',
+  'JWT_SECRET',
+  'LICENSE_SECRET_KEY',
+  'FRONTEND_URL',
+];
+
+for (const envVar of requiredEnvVars) {
+  if (!process.env[envVar]) {
+    throw new Error(`Missing required environment variable: ${envVar}`);
+  }
+}
+
+console.log('Environment validation passed');
+```
+
+## Troubleshooting
+
+### Variables Not Loading
+
+**Backend:**
+- Ensure `dotenv` is imported before other modules
+- Check file is named exactly `.env`
+- Verify file is in correct directory (`apps/server/`)
+- Restart the server after changes
+
+**Frontend:**
+- Ensure variable has `NEXT_PUBLIC_` prefix (for client-side)
+- Rebuild the application (`pnpm build`)
+- Clear Next.js cache: `rm -rf .next`
+- Restart dev server
+
+### OAuth Not Working
+
+- Verify all Google OAuth variables are set
+- Check callback URL matches Google Console
+- Ensure URLs don't have typos or extra spaces
+- Verify Google Cloud project has OAuth consent configured
+
+### MongoDB Connection Fails
+
+- Test connection string with `mongosh`
+- Check IP whitelist (MongoDB Atlas)
+- Verify credentials are correct
+- Ensure database name is included in URI
+
+## Next Steps
+
+- [Backend Setup](/deployment/backend-setup) - Deploy the Node.js server
+- [Frontend Setup](/deployment/frontend-setup) - Deploy the Next.js dashboard
+- [Google OAuth Setup](/api/authentication) - Configure OAuth authentication

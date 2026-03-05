@@ -1,0 +1,225 @@
+---
+title: 'Managing Clients'
+description: 'Create, view, and organize clients in your KeyBox dashboard'
+icon: 'users'
+---
+
+## Overview
+
+Clients are the top-level organizational unit in KeyBox. Each client represents a customer or organization that you're providing licensed services to. Projects and licenses are nested under clients to maintain a clear hierarchy.
+
+## Creating a Client
+
+The **Create New Client** card is located at the top of your dashboard for quick access.
+
+<Steps>
+  <Step title="Navigate to the Create Client Card">
+    Find the card with the **Create New Client** heading in the upper section of your dashboard.
+  </Step>
+  
+  <Step title="Enter Client Name">
+    Type the client's name or company name in the first input field.
+    
+    ```text
+    Example: Acme Corporation
+    ```
+  </Step>
+  
+  <Step title="Enter Client Email">
+    Add the client's email address in the second field. This must be a valid email format.
+    
+    ```text
+    Example: contact@acmecorp.com
+    ```
+    
+    <Note>
+      The email field validates in real-time. You'll see a red border if the format is invalid.
+    </Note>
+  </Step>
+  
+  <Step title="Create the Client">
+    Click the **Create** button or press **Enter** to add the client to your dashboard.
+    
+    A success notification will appear, and the form will clear for your next entry.
+  </Step>
+</Steps>
+
+## Client Information
+
+Each client entry stores:
+
+<CardGroup cols={2}>
+  <Card title="Name" icon="tag">
+    The client's display name shown throughout the dashboard
+  </Card>
+  <Card title="Email" icon="envelope">
+    Contact email used for billing and notifications
+  </Card>
+  <Card title="Projects" icon="folder">
+    All projects associated with this client
+  </Card>
+  <Card title="Licenses" icon="key">
+    Indirect access to all licenses through projects
+  </Card>
+</CardGroup>
+
+## Viewing Clients
+
+Clients appear in the **Clients & Projects** section as expandable cards.
+
+### Client Card Layout
+
+Each client card displays:
+
+- **User Icon**: Visual identifier for the client
+- **Client Name**: Displayed prominently in white text
+- **Project Count**: Shows how many projects belong to this client
+- **Bill Button**: Generate invoices for the client
+- **Expand Arrow**: Click to reveal project details
+
+### Expanding Client Details
+
+<Steps>
+  <Step title="Click the Client Card">
+    Click anywhere on the client card (except the Bill button) to expand it.
+  </Step>
+  
+  <Step title="View Projects">
+    All projects under this client will be revealed in nested cards.
+  </Step>
+  
+  <Step title="Collapse When Done">
+    Click the card again to collapse and return to the summary view.
+  </Step>
+</Steps>
+
+<Info>
+  The accordion allows only one client to be expanded at a time, keeping your workspace organized.
+</Info>
+
+## Client Actions
+
+### Generating Invoices
+
+KeyBox includes a built-in billing system for client management.
+
+<Steps>
+  <Step title="Open Billing Dialog">
+    Click the **Bill** button on the client card you want to invoice.
+  </Step>
+  
+  <Step title="Select Project">
+    Choose which project you're billing for from the dropdown menu.
+  </Step>
+  
+  <Step title="Add Line Items">
+    The system automatically populates items based on the project's services (Hosting, Domain, etc.).
+    
+    - Modify descriptions as needed
+    - Enter amounts for each service
+    - Add or remove line items using the buttons
+  </Step>
+  
+  <Step title="Review Total">
+    The total amount updates automatically as you modify line items.
+  </Step>
+  
+  <Step title="Create and Send">
+    Click **Create Bill** to generate the invoice, then **Send** to email it to the client.
+  </Step>
+</Steps>
+
+<Note>
+  The billing feature requires the client to have a valid email address configured.
+</Note>
+
+## Client Organization Best Practices
+
+### Naming Conventions
+
+Use clear, consistent naming:
+
+- **Company Names**: "Acme Corporation", "TechStart Inc."
+- **Individual Clients**: "John Smith - Personal", "Jane Doe Consulting"
+- **Internal Projects**: "Internal - Marketing Team"
+
+### Email Management
+
+- Use primary contact emails for business clients
+- For individual clients, use their preferred contact method
+- Keep emails updated to ensure billing works correctly
+
+### Grouping Strategy
+
+<CardGroup cols={2}>
+  <Card title="By Organization" icon="building">
+    One client per company, with multiple projects for different products
+  </Card>
+  <Card title="By Department" icon="sitemap">
+    Split large organizations into department-level clients
+  </Card>
+</CardGroup>
+
+## Empty State
+
+If you haven't created any clients yet, you'll see a helpful empty state:
+
+- User icon placeholder
+- "No clients yet" heading
+- "Create your first client to get started" message
+
+## Client Limitations
+
+<Warning>
+  Currently, KeyBox does not support:
+  - Editing client information after creation
+  - Deleting clients (requires manual database operation)
+  - Bulk client import
+  
+  Plan your client structure carefully before creating entries.
+</Warning>
+
+## Client Statistics
+
+The dashboard header shows your total client count:
+
+```text
+2 clients
+```
+
+This updates automatically as you add clients.
+
+## Troubleshooting
+
+### "Failed to create client" Error
+
+<AccordionGroup>
+  <Accordion title="Check your authentication">
+    Ensure you're still logged in. If your session expired, you'll need to log in again.
+  </Accordion>
+  
+  <Accordion title="Verify email format">
+    The email must be in valid format (e.g., user@domain.com). Check for typos.
+  </Accordion>
+  
+  <Accordion title="Check network connection">
+    Ensure you have a stable internet connection and the backend server is running.
+  </Accordion>
+  
+  <Accordion title="Duplicate client names">
+    While allowed, duplicate names may cause confusion. Consider using unique identifiers.
+  </Accordion>
+</AccordionGroup>
+
+## What's Next?
+
+Once you've created clients, you can:
+
+<CardGroup cols={2}>
+  <Card title="Create Projects" icon="folder-plus" href="/dashboard/managing-projects">
+    Add projects under your clients with specific services
+  </Card>
+  <Card title="Generate Licenses" icon="key" href="/dashboard/creating-licenses">
+    Create license keys for client projects
+  </Card>
+</CardGroup>

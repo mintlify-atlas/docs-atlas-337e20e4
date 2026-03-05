@@ -1,0 +1,428 @@
+---
+title: 'Creating and Managing Licenses'
+description: 'Generate license keys and manage their lifecycle in KeyBox'
+icon: 'key'
+---
+
+## Overview
+
+License keys are the core of KeyBox's functionality. Each license is automatically generated when you create a project and can be activated, revoked, and monitored throughout its lifecycle.
+
+<Info>
+  Licenses are always created as part of a project. KeyBox does not support standalone license creation—every license belongs to a project under a client.
+</Info>
+
+## License Generation Process
+
+Licenses are automatically created when you set up a new project.
+
+<Steps>
+  <Step title="Navigate to Create Project">
+    Use the **Create Project & License** card on your dashboard.
+  </Step>
+  
+  <Step title="Configure License Parameters">
+    Your license is configured through the project settings:
+    
+    - **Duration**: Sets how long the license remains valid (1-12 months)
+    - **Services**: Defines which services the license grants access to
+    - **Client Context**: Associates the license with a specific client
+  </Step>
+  
+  <Step title="Generate License">
+    Click **Create Project & License** to generate the license key.
+    
+    KeyBox creates:
+    - A unique, cryptographic license key
+    - Initial status set to "Pending"
+    - Issue date timestamp
+    - Expiration date (calculated from duration)
+  </Step>
+  
+  <Step title="Access License Key">
+    The new license appears in the project's license table, ready to be shared with your client.
+  </Step>
+</Steps>
+
+## License Configuration
+
+### Duration Settings
+
+The license duration determines the validity period:
+
+<CardGroup cols={3}>
+  <Card title="1-3 Months" icon="calendar-days">
+    Short-term licenses for trials, demos, or monthly subscriptions
+  </Card>
+  <Card title="3-6 Months" icon="calendar">
+    Medium-term licenses for quarterly or semi-annual plans
+  </Card>
+  <Card title="6-12 Months" icon="calendar-week">
+    Long-term licenses for annual contracts and enterprise agreements
+  </Card>
+</CardGroup>
+
+<Note>
+  The duration counter starts when the license is **activated**, not when it's created. This allows you to generate licenses in advance.
+</Note>
+
+### Service Configuration
+
+Services define what the license grants access to:
+
+#### Available Services
+
+- **Hosting**: Grants access to hosting-related features in your application
+- **Domain**: Grants access to domain management features
+
+You can select:
+- **Hosting only**: For server or infrastructure services
+- **Domain only**: For domain registration or DNS management
+- **Both**: For complete hosting packages with domain included
+
+<Warning>
+  Service selection is permanent. Once a license is created, you cannot modify its services. Plan carefully before generation.
+</Warning>
+
+## License Lifecycle
+
+Licenses progress through several states during their lifecycle.
+
+### Pending Status
+
+When first created, all licenses start in pending state:
+
+- **Status Badge**: Gray badge reading "PENDING"
+- **Duration**: Not yet consuming time
+- **Header Message**: "Starts on Activation (X Months)"
+- **Actions**: Can be activated or deleted
+
+#### When to Keep Pending
+
+- Licenses generated in advance for future clients
+- Pre-created licenses for batch deployment
+- Licenses awaiting purchase or payment confirmation
+
+### Active Status
+
+Activated licenses are fully functional:
+
+- **Status Badge**: Green badge reading "ACTIVE"
+- **Duration**: Timer running, counting down to expiration
+- **Header Message**: "Expires: [Date]" with color-coded urgency
+- **Actions**: Can be revoked or monitored
+
+#### Activation Process
+
+<Steps>
+  <Step title="Locate the License">
+    Find the license in its project's license table.
+  </Step>
+  
+  <Step title="Toggle Activation">
+    Click the toggle switch in the Actions column.
+    
+    The switch moves to the right and changes color to indicate active state.
+  </Step>
+  
+  <Step title="Confirm Activation">
+    A notification appears confirming the status change.
+    
+    The expiration date is calculated and displayed in the project header.
+  </Step>
+</Steps>
+
+<Note>
+  First activation can also happen through the SDK when a client validates the license for the first time.
+</Note>
+
+### Revoked Status
+
+Manually disabled licenses:
+
+- **Status Badge**: Red badge reading "REVOKED"
+- **Duration**: Timer paused
+- **Actions**: Can be reactivated
+- **SDK Response**: Validation fails until reactivated
+
+#### When to Revoke
+
+- Client payment failure or chargebacks
+- Terms of service violations
+- Temporary access suspension
+- Testing or debugging purposes
+
+#### Revocation Process
+
+<Steps>
+  <Step title="Find Active License">
+    Navigate to the license you want to revoke.
+  </Step>
+  
+  <Step title="Toggle Off">
+    Click the active toggle switch to move it to the off position.
+  </Step>
+  
+  <Step title="Confirm Revocation">
+    The status immediately changes to "REVOKED" and the client can no longer validate the license.
+  </Step>
+</Steps>
+
+<Warning>
+  Revocation is immediate and will cause the client's application to fail license validation on the next check.
+</Warning>
+
+### Expired Status
+
+Licenses that have exceeded their duration:
+
+- **Status Badge**: Gray badge reading "EXPIRED"
+- **Duration**: Timer reached zero
+- **Header Message**: "License Has Been Expired"
+- **Actions**: Cannot be reactivated
+
+<Info>
+  Expired licenses cannot be renewed or reactivated. You must create a new project and license for the client.
+</Info>
+
+## Managing License Keys
+
+### Viewing License Keys
+
+By default, license keys are masked for security:
+
+```text
+ABCDEF12••••••••
+```
+
+<Steps>
+  <Step title="Reveal Full Key">
+    Click the eye icon next to the masked key.
+    
+    The full key is displayed:
+    ```text
+    ABCDEF1234567890GHIJKLMNOPQRSTUV
+    ```
+  </Step>
+  
+  <Step title="Hide Key Again">
+    Click the eye-off icon to re-mask the key for security.
+  </Step>
+</Steps>
+
+### Copying License Keys
+
+<Steps>
+  <Step title="Locate Copy Icon">
+    Find the copy icon next to the license key (clipboard icon).
+  </Step>
+  
+  <Step title="Click to Copy">
+    Click the icon to copy the full license key to your clipboard.
+    
+    The icon changes to a green checkmark for 2 seconds to confirm the action.
+  </Step>
+  
+  <Step title="Share with Client">
+    Paste the key into your communication method of choice:
+    - Email
+    - Customer portal
+    - Support ticket
+    - Direct message
+  </Step>
+</Steps>
+
+<Note>
+  You can copy keys even when they're masked. The full key is always copied, not the masked version.
+</Note>
+
+## Monitoring License Health
+
+KeyBox provides visual indicators to help you proactively manage license renewals.
+
+### Expiration Indicators
+
+The project header badge changes color based on remaining time:
+
+<CardGroup cols={3}>
+  <Card title="Green Badge" icon="circle" color="#10b981">
+    **>80% remaining**
+    
+    License is healthy with plenty of time left
+  </Card>
+  
+  <Card title="Yellow Badge" icon="circle" color="#f59e0b">
+    **30-80% remaining**
+    
+    Consider preparing renewal soon
+  </Card>
+  
+  <Card title="Red Badge (Pulsing)" icon="circle" color="#ef4444">
+    **Less than 30% remaining**
+    
+    Urgent renewal needed, contact client immediately
+  </Card>
+</CardGroup>
+
+### Expiration Date Display
+
+Active licenses show their expiration date in the header:
+
+```text
+Expires: Mar 5, 2026
+```
+
+Format:
+- Month abbreviated (Jan, Feb, Mar, etc.)
+- Day of month
+- Full year
+
+## License Dashboard Features
+
+### License Table Layout
+
+Each project displays its licenses in a detailed table:
+
+```
+┌──────────────────┬─────────────────┬──────────┬──────────┐
+│ License Key      │ Services        │ Status   │ Actions  │
+├──────────────────┼─────────────────┼──────────┼──────────┤
+│ ABCDEF12•••••••• │ Hosting, Domain │ ACTIVE   │ [Toggle] │
+│ [👁] [📋]        │                 │          │          │
+└──────────────────┴─────────────────┴──────────┴──────────┘
+```
+
+### Service Tags
+
+Services appear as colored badges:
+
+- **Hosting**: Blue/slate badge
+- **Domain**: Blue/slate badge
+- Multiple services display as separate tags
+
+### Status Badges
+
+Color-coded status indicators:
+
+- **ACTIVE**: Green badge with emerald tones
+- **PENDING**: Amber/yellow badge
+- **REVOKED**: Red badge with white text
+- **EXPIRED**: Gray/slate badge
+
+## License Best Practices
+
+### Pre-Generation Strategy
+
+<CardGroup cols={2}>
+  <Card title="Batch Creation" icon="layer-group">
+    Create multiple licenses in advance for planned deployments
+  </Card>
+  <Card title="Template Projects" icon="copy">
+    Set up common project configurations for quick license generation
+  </Card>
+</CardGroup>
+
+### Activation Timing
+
+- **Immediate Activation**: For licenses that should start right away
+- **Client-Triggered**: Let clients activate via SDK validation (recommended)
+- **Delayed Activation**: Keep pending until payment or contract signature
+
+### Renewal Management
+
+<Steps>
+  <Step title="Monitor Dashboard Regularly">
+    Check the dashboard for yellow and red expiration badges.
+  </Step>
+  
+  <Step title="Set Renewal Reminders">
+    Contact clients 30 days before expiration for license renewals.
+  </Step>
+  
+  <Step title="Create New License">
+    When a license is near expiration, create a new project with an updated duration.
+  </Step>
+  
+  <Step title="Coordinate Transition">
+    Share the new license key before the old one expires to avoid service interruption.
+  </Step>
+</Steps>
+
+<Warning>
+  There is no automatic renewal system. You must manually create new licenses when existing ones expire.
+</Warning>
+
+## Troubleshooting
+
+### License Not Activating
+
+<AccordionGroup>
+  <Accordion title="Toggle switch not working">
+    - Ensure you have an active internet connection
+    - Check that your session hasn't expired (refresh the page)
+    - Verify the license is in PENDING or REVOKED status
+    - Check browser console for errors
+  </Accordion>
+  
+  <Accordion title="Status not updating">
+    - Refresh the dashboard page
+    - Expand and collapse the client card to reload data
+    - Check that the backend server is responding
+  </Accordion>
+</AccordionGroup>
+
+### License Key Issues
+
+<AccordionGroup>
+  <Accordion title="Cannot copy key">
+    - Ensure clipboard permissions are enabled in your browser
+    - Try selecting the text manually and using Ctrl+C/Cmd+C
+    - Check if browser extensions are blocking clipboard access
+  </Accordion>
+  
+  <Accordion title="Key not visible after generation">
+    - Expand the client card containing the project
+    - Scroll down to the project's license table
+    - Ensure the project creation succeeded (check for success notification)
+  </Accordion>
+</AccordionGroup>
+
+### Expired License Recovery
+
+<Warning>
+  Expired licenses cannot be reactivated. This is a permanent state.
+</Warning>
+
+To provide continued service:
+
+1. Create a new project for the same client
+2. Generate a fresh license with appropriate duration
+3. Provide the new key to your client
+4. Update their application configuration with the new key
+
+## Integration with SDKs
+
+Once you've generated a license key, your clients can integrate it into their applications:
+
+<CardGroup cols={3}>
+  <Card title="Node.js SDK" icon="node-js" href="/sdks/node-sdk">
+    Validate licenses in Node.js applications
+  </Card>
+  <Card title="Python SDK" icon="python" href="/sdks/python-sdk">
+    Integrate license validation in Python projects
+  </Card>
+  <Card title=".NET SDK" icon="microsoft" href="/sdks/dotnet-sdk">
+    Use license validation in C# and .NET apps
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Learn License Lifecycle" icon="rotate" href="/concepts/license-lifecycle">
+    Understand the complete license state machine
+  </Card>
+  <Card title="Implement Validation" icon="shield-check" href="/sdks/overview">
+    Add license validation to your applications
+  </Card>
+</CardGroup>

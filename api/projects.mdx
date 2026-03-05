@@ -1,0 +1,530 @@
+---
+title: Projects
+description: Create projects with licenses for your clients
+---
+
+## Overview
+
+Projects represent specific software products or services delivered to clients. Each project is associated with a client and has at least one license. The project endpoint allows you to create both the project and its initial license in a single transaction.
+
+## Create Project with License
+
+Create a new project and generate its first license automatically.
+
+### Endpoint
+
+```
+POST /projects/createProject
+```
+
+<Warning>
+  This endpoint requires authentication. Include a valid JWT token in the Authorization header.
+</Warning>
+
+### Authentication
+
+Include the JWT token in the Authorization header:
+
+```
+Authorization: Bearer <your-jwt-token>
+```
+
+### Request Body
+
+<ParamField body="clientId" type="string" required>
+  MongoDB ObjectId of the client this project belongs to
+</ParamField>
+
+<ParamField body="projectName" type="string" required>
+  Name of the project
+</ParamField>
+
+<ParamField body="duration" type="number" required>
+  License duration in months (1-12)
+</ParamField>
+
+<ParamField body="services" type="array" required>
+  Array of services included in the license (e.g., ["Hosting", "Domain"]). Must include at least one service.
+</ParamField>
+
+### Example Request
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://your-keybox-server.com/projects/createProject \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -d '{
+    "clientId": "60f7b3b3e6b3a72e8c8e4a1a",
+    "projectName": "E-commerce Website",
+    "duration": 12,
+    "services": ["Hosting", "Domain"]
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch(
+  'https://your-keybox-server.com/projects/createProject',
+  {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      clientId: '60f7b3b3e6b3a72e8c8e4a1a',
+      projectName: 'E-commerce Website',
+      duration: 12,
+      services: ['Hosting', 'Domain']
+    })
+  }
+);
+
+const data = await response.json();
+```
+
+```python Python
+import requests
+
+headers = {
+    'Authorization': f'Bearer {token}'
+}
+
+response = requests.post(
+    'https://your-keybox-server.com/projects/createProject',
+    headers=headers,
+    json={
+        'clientId': '60f7b3b3e6b3a72e8c8e4a1a',
+        'projectName': 'E-commerce Website',
+        'duration': 12,
+        'services': ['Hosting', 'Domain']
+    }
+)
+
+data = response.json()
+```
+</CodeGroup>
+
+### Response
+
+<ResponseField name="message" type="string">
+  Success message
+</ResponseField>
+
+<ResponseField name="project" type="object">
+  The created project object
+</ResponseField>
+
+<ResponseField name="license" type="object">
+  The created license object
+</ResponseField>
+
+<Expandable title="project object">
+  <ResponseField name="_id" type="string">
+    MongoDB ObjectId of the project
+  </ResponseField>
+
+  <ResponseField name="name" type="string">
+    Project name
+  </ResponseField>
+
+  <ResponseField name="client" type="string">
+    Client ID this project belongs to
+  </ResponseField>
+
+  <ResponseField name="createdAt" type="date">
+    When the project was created
+  </ResponseField>
+
+  <ResponseField name="updatedAt" type="date">
+    When the project was last updated
+  </ResponseField>
+</Expandable>
+
+<Expandable title="license object">
+  <ResponseField name="_id" type="string">
+    MongoDB ObjectId of the license
+  </ResponseField>
+
+  <ResponseField name="key" type="string">
+    The generated license key
+  </ResponseField>
+
+  <ResponseField name="duration" type="number">
+    License duration in months
+  </ResponseField>
+
+  <ResponseField name="issuedAt" type="date">
+    When the license was created
+  </ResponseField>
+
+  <ResponseField name="expiresAt" type="date">
+    When the license will expire
+  </ResponseField>
+
+  <ResponseField name="services" type="array">
+    Array of included services
+  </ResponseField>
+
+  <ResponseField name="status" type="string">
+    License status ("PENDING" initially)
+  </ResponseField>
+
+  <ResponseField name="user" type="string">
+    User ID who created the license
+  </ResponseField>
+
+  <ResponseField name="client" type="string">
+    Client ID
+  </ResponseField>
+
+  <ResponseField name="project" type="string">
+    Project ID
+  </ResponseField>
+</Expandable>
+
+### Example Response
+
+```json
+{
+  "message": "Project and License created successfully",
+  "project": {
+    "_id": "60f7b3b3e6b3a72e8c8e4a1b",
+    "name": "E-commerce Website",
+    "client": "60f7b3b3e6b3a72e8c8e4a1a",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  "license": {
+    "_id": "60f7b3b3e6b3a72e8c8e4a1c",
+    "key": "KB-60f7b3b3e6b3a72e8c8e4a1b-A1B2-C3D4-E5F6",
+    "duration": 12,
+    "issuedAt": "2024-01-01T00:00:00.000Z",
+    "expiresAt": "2025-01-01T00:00:00.000Z",
+    "services": ["Hosting", "Domain"],
+    "status": "PENDING",
+    "user": "60f7b3b3e6b3a72e8c8e4a19",
+    "client": "60f7b3b3e6b3a72e8c8e4a1a",
+    "project": "60f7b3b3e6b3a72e8c8e4a1b"
+  }
+}
+```
+
+## Transaction Handling
+
+<Note>
+  This endpoint uses MongoDB transactions to ensure atomic creation of both project and license.
+</Note>
+
+The transaction ensures:
+
+1. **Atomicity**: Both project and license are created together, or neither is created
+2. **Consistency**: If any step fails, all changes are rolled back
+3. **Data Integrity**: No orphaned projects or licenses
+
+### Transaction Flow
+
+<Steps>
+  <Step title="Start Transaction">
+    Begin MongoDB transaction (skipped in test environment)
+  </Step>
+  
+  <Step title="Validate Client">
+    Verify the client exists
+  </Step>
+  
+  <Step title="Create Project">
+    Insert project record within transaction
+  </Step>
+  
+  <Step title="Generate License">
+    Create license with auto-generated key within transaction
+  </Step>
+  
+  <Step title="Commit">
+    Commit transaction if all steps succeed
+  </Step>
+  
+  <Step title="Rollback on Error">
+    Abort transaction if any step fails
+  </Step>
+</Steps>
+
+## Error Responses
+
+### Missing Client ID or Project Name
+
+**Status Code**: 400
+
+```json
+{
+  "message": "Client ID & Project name required"
+}
+```
+
+### Invalid Duration
+
+**Status Code**: 400
+
+```json
+{
+  "message": "Invalid duration"
+}
+```
+
+<Note>
+  Duration must be between 1 and 12 months.
+</Note>
+
+### Missing Services
+
+**Status Code**: 400
+
+```json
+{
+  "message": "At least one service is required"
+}
+```
+
+### Client Not Found
+
+**Status Code**: 404
+
+```json
+{
+  "message": "Client not found"
+}
+```
+
+### Unauthorized
+
+**Status Code**: 401
+
+```json
+{
+  "message": "Unauthorized"
+}
+```
+
+### Server Error
+
+**Status Code**: 500
+
+```json
+{
+  "message": "Failed to create project and license",
+  "error": "Detailed error message"
+}
+```
+
+## Services
+
+The `services` array defines what's included in the license. Available options:
+
+- **Hosting**: Web hosting service
+- **Domain**: Domain registration/management
+
+You must provide at least one service:
+
+```json
+{
+  "services": ["Hosting"]
+}
+```
+
+Or multiple services:
+
+```json
+{
+  "services": ["Hosting", "Domain"]
+}
+```
+
+## Complete Example
+
+<CodeGroup>
+```javascript JavaScript
+class ProjectManager {
+  constructor(serverUrl, authToken) {
+    this.serverUrl = serverUrl;
+    this.authToken = authToken;
+  }
+
+  async createProject(clientId, projectName, duration, services) {
+    try {
+      const response = await fetch(
+        `${this.serverUrl}/projects/createProject`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.authToken}`
+          },
+          body: JSON.stringify({
+            clientId,
+            projectName,
+            duration,
+            services
+          })
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      console.log('Project created:', data.project.name);
+      console.log('License key:', data.license.key);
+      console.log('License expires:', new Date(data.license.expiresAt));
+      
+      return data;
+    } catch (error) {
+      console.error('Failed to create project:', error.message);
+      throw error;
+    }
+  }
+}
+
+// Usage - Complete workflow
+const manager = new ProjectManager(
+  'https://your-keybox-server.com',
+  'your-jwt-token'
+);
+
+try {
+  // Assuming you already have a client
+  const result = await manager.createProject(
+    '60f7b3b3e6b3a72e8c8e4a1a', // clientId
+    'E-commerce Website',        // projectName
+    12,                          // duration (months)
+    ['Hosting', 'Domain']        // services
+  );
+  
+  // Send license key to client
+  const licenseKey = result.license.key;
+  console.log('\nShare this license key with your client:');
+  console.log(licenseKey);
+  
+} catch (error) {
+  console.error('Setup failed:', error.message);
+}
+```
+
+```python Python
+import requests
+from datetime import datetime
+
+class ProjectManager:
+    def __init__(self, server_url, auth_token):
+        self.server_url = server_url
+        self.auth_token = auth_token
+
+    def create_project(self, client_id, project_name, duration, services):
+        try:
+            headers = {
+                'Authorization': f'Bearer {self.auth_token}'
+            }
+            
+            response = requests.post(
+                f'{self.server_url}/projects/createProject',
+                headers=headers,
+                json={
+                    'clientId': client_id,
+                    'projectName': project_name,
+                    'duration': duration,
+                    'services': services
+                }
+            )
+            
+            if not response.ok:
+                error = response.json()
+                raise Exception(error.get('message', f'HTTP {response.status_code}'))
+            
+            data = response.json()
+            
+            print(f"Project created: {data['project']['name']}")
+            print(f"License key: {data['license']['key']}")
+            
+            expires_at = datetime.fromisoformat(
+                data['license']['expiresAt'].replace('Z', '+00:00')
+            )
+            print(f"License expires: {expires_at}")
+            
+            return data
+        except Exception as error:
+            print(f'Failed to create project: {str(error)}')
+            raise
+
+# Usage - Complete workflow
+manager = ProjectManager(
+    'https://your-keybox-server.com',
+    'your-jwt-token'
+)
+
+try:
+    # Assuming you already have a client
+    result = manager.create_project(
+        '60f7b3b3e6b3a72e8c8e4a1a',  # client_id
+        'E-commerce Website',         # project_name
+        12,                           # duration (months)
+        ['Hosting', 'Domain']         # services
+    )
+    
+    # Send license key to client
+    license_key = result['license']['key']
+    print('\nShare this license key with your client:')
+    print(license_key)
+    
+except Exception as error:
+    print(f'Setup failed: {str(error)}')
+```
+</CodeGroup>
+
+## Workflow Integration
+
+Typical workflow for setting up a new project:
+
+<Steps>
+  <Step title="Create Client">
+    First, create a client record using the [Clients endpoint](/api/clients)
+  </Step>
+  
+  <Step title="Create Project">
+    Use the client ID to create a project with its license
+  </Step>
+  
+  <Step title="Deliver License">
+    Send the generated license key to the client
+  </Step>
+  
+  <Step title="Client Setup">
+    Client activates the license in their application
+  </Step>
+</Steps>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Descriptive Names" icon="tag">
+    Use clear, descriptive project names for easy identification
+  </Card>
+  <Card title="Appropriate Duration" icon="calendar">
+    Set license duration based on your service agreement
+  </Card>
+  <Card title="Service Selection" icon="list-check">
+    Clearly define included services for transparency
+  </Card>
+  <Card title="Error Handling" icon="triangle-exclamation">
+    Handle transaction failures gracefully
+  </Card>
+</CardGroup>
+
+## See Also
+
+- [Clients](/api/clients) - Create client records
+- [Create License](/api/create-license) - Create additional licenses for existing projects
+- [Dashboard](/api/dashboard) - View all projects and their licenses
+- [Activate License](/api/activate-license) - How clients activate licenses

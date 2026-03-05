@@ -1,0 +1,773 @@
+---
+title: '.NET SDK'
+description: 'Protect your ASP.NET Core and .NET applications with license validation'
+icon: 'microsoft'
+---
+
+## Installation
+
+<Steps>
+  <Step title="Install the package">
+    Install the KeyBox SDK using the .NET CLI or NuGet Package Manager:
+    
+    <CodeGroup>
+    ```bash .NET CLI
+    dotnet add package KeyboxSdk
+    ```
+    
+    ```bash Package Manager
+    Install-Package KeyboxSdk
+    ```
+    
+    ```xml PackageReference
+    <PackageReference Include="KeyboxSdk" Version="1.0.2" />
+    ```
+    </CodeGroup>
+  </Step>
+  
+  <Step title="Add using directive">
+    Import the KeyBox SDK namespace in your code:
+    
+    ```csharp
+    using KeyboxSdk;
+    ```
+  </Step>
+  
+  <Step title="Get your license key">
+    Obtain a license key from your KeyBox dashboard or from your end users.
+  </Step>
+</Steps>
+
+## Quick Start
+
+### Protect an ASP.NET Core App
+
+The fastest way to add license protection to an ASP.NET Core application:
+
+```csharp Program.cs
+using KeyboxSdk;
+
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddControllers();
+
+var app = builder.Build();
+
+app.MapGet("/", () => new { message = "Hello from licensed app!" });
+app.MapGet("/api/data", () => new { data = new[] { 1, 2, 3, 4, 5 } });
+
+// Protect your app with a single method call
+await app.RunProtectedAsync(
+    productName: "My API",
+    key: Environment.GetEnvironmentVariable("LICENSE_KEY") ?? ""
+);
+```
+
+<Warning>
+  The `RunProtectedAsync` extension method will:
+  1. Activate the license (throws exception if invalid)
+  2. Start background validation when the app starts
+  3. Automatically shutdown (hard exit) if license is revoked or expires
+</Warning>
+
+## API Reference
+
+### ActivateLicenseAsync
+
+Activates a license key for your product. Call this once before starting your application.
+
+```csharp
+using KeyboxSdk;
+
+var result = await KeyboxClient.ActivateLicenseAsync(
+    productName: "My Product",
+    key: "license-key-here",
+    apiUrl: "https://api-keybox.vercel.app", // optional
+    endpoint: "/validate/activate" // optional
+);
+
+Console.WriteLine($"Status: {result.Status}");
+Console.WriteLine($"Expires: {result.ExpiresAt}");
+// Status: active
+// Expires: 2026-12-31T23:59:59Z
+```
+
+#### Parameters
+
+<ParamField path="productName" type="string" required>
+  The name of your product as configured in KeyBox dashboard
+</ParamField>
+
+<ParamField path="key" type="string" required>
+  The license key to activate
+</ParamField>
+
+<ParamField path="apiUrl" type="string" default="https://api-keybox.vercel.app">
+  The KeyBox API base URL. Override for self-hosted instances.
+</ParamField>
+
+<ParamField path="endpoint" type="string" default="/validate/activate">
+  The activation endpoint path
+</ParamField>
+
+#### Returns
+
+```csharp
+Task<LicenseResponse>: {
+    bool Success,
+    bool Valid,
+    string? Status,
+    string? ExpiresAt,
+    string? Message
+}
+```
+
+#### Throws
+
+- `ArgumentException` - If `productName` or `key` is null, empty, or whitespace
+- `Exception` - If the license server returns an error
+- `Exception` - If activation fails for any reason (expired, revoked, invalid key, etc.)
+
+#### Example: Error Handling
+
+```csharp
+using KeyboxSdk;
+
+try
+{
+    var result = await KeyboxClient.ActivateLicenseAsync(
+        productName: "My Product",
+        key: Environment.GetEnvironmentVariable("LICENSE_KEY") ?? ""
+    );
+    
+    Console.WriteLine($"License activated: {result.Status}");
+    Console.WriteLine($"Valid until: {result.ExpiresAt}");
+}
+catch (ArgumentException ex)
+{
+    Console.WriteLine($"Configuration error: {ex.Message}");
+    Environment.Exit(1);
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Failed to activate license: {ex.Message}");
+    Environment.Exit(1);
+}
+```
+
+---
+
+### StartLicenseDaemonAsync
+
+Starts a background daemon that validates the license every 15 minutes. Automatically handles license revocation and expiration.
+
+```csharp
+using KeyboxSdk;
+
+await KeyboxClient.StartLicenseDaemonAsync(
+    productName: "My Product",
+    key: "license-key-here",
+    apiUrl: "https://api-keybox.vercel.app", // optional
+    endpoint: "/validate", // optional
+    onStart: async (data) =>
+    {
+        Console.WriteLine($"License valid: {data.Status}");
+    },
+    onStop: async (data) =>
+    {
+        Console.WriteLine($"License invalid: {data.Status}");
+        Environment.Exit(1);
+    }
+);
+```
+
+#### Parameters
+
+<ParamField path="productName" type="string" required>
+  The name of your product as configured in KeyBox dashboard
+</ParamField>
+
+<ParamField path="key" type="string" required>
+  The license key to validate
+</ParamField>
+
+<ParamField path="apiUrl" type="string" default="https://api-keybox.vercel.app">
+  The KeyBox API base URL
+</ParamField>
+
+<ParamField path="endpoint" type="string" default="/validate">
+  The validation endpoint path
+</ParamField>
+
+<ParamField path="onStart" type="Func<LicenseResponse, Task>" default="null">
+  Callback function invoked when license becomes valid
+  
+  ```csharp
+  async Task OnStart(LicenseResponse data)
+  {
+      // Handle valid license
+  }
+  ```
+</ParamField>
+
+<ParamField path="onStop" type="Func<LicenseResponse, Task>" default="null">
+  Callback function invoked when license becomes invalid (revoked, expired, or error)
+  
+  ```csharp
+  async Task OnStop(LicenseResponse data)
+  {
+      // Handle invalid license
+      Environment.Exit(1);
+  }
+  ```
+</ParamField>
+
+#### Behavior
+
+<Steps>
+  <Step title="Initial validation">
+    Validates the license immediately when called
+  </Step>
+  
+  <Step title="Background timer">
+    Sets up a timer that validates every **900 seconds (15 minutes)**
+  </Step>
+  
+  <Step title="State monitoring">
+    Tracks license state changes and calls callbacks when state transitions between valid and invalid
+  </Step>
+  
+  <Step title="Error handling">
+    Exceptions during validation call `onStop` and mark the license as invalid
+  </Step>
+</Steps>
+
+<Note>
+  The validation interval is fixed at 15 minutes. The daemon runs on a background timer and does not block your application.
+</Note>
+
+#### Example: Manual Daemon Management
+
+```csharp
+using KeyboxSdk;
+
+var productName = "My Product";
+var key = Environment.GetEnvironmentVariable("LICENSE_KEY") ?? "";
+
+// Start the daemon
+await KeyboxClient.StartLicenseDaemonAsync(
+    productName: productName,
+    key: key,
+    onStart: async (data) =>
+    {
+        Console.WriteLine($"✓ License valid: {data.Status}");
+    },
+    onStop: async (data) =>
+    {
+        Console.WriteLine($"✗ License {data.Status}: {data.Message}");
+        Console.WriteLine("Application will shutdown.");
+        
+        // Cleanup resources
+        await CleanupAsync();
+        
+        // Force exit
+        Environment.Exit(1);
+    }
+);
+
+Console.WriteLine("License daemon started");
+
+// Your application code here
+RunApplication();
+
+// Stop daemon on shutdown
+AppDomain.CurrentDomain.ProcessExit += (s, e) =>
+{
+    KeyboxClient.StopLicenseDaemon();
+};
+```
+
+---
+
+### StopLicenseDaemon
+
+Stops the background license validation daemon.
+
+```csharp
+using KeyboxSdk;
+
+KeyboxClient.StopLicenseDaemon();
+```
+
+<Warning>
+  Only call this when you're shutting down your application. Stopping the daemon disables license enforcement.
+</Warning>
+
+---
+
+### RunProtectedAsync
+
+Extension method that protects your ASP.NET Core application. Activates the license, starts background validation, and automatically shuts down the app if the license is revoked.
+
+```csharp
+using KeyboxSdk;
+
+var builder = WebApplication.CreateBuilder(args);
+var app = builder.Build();
+
+app.MapGet("/", () => new { message = "Hello World" });
+app.MapGet("/api/status", () => new { status = "operational" });
+
+await app.RunProtectedAsync(
+    productName: "My API",
+    key: Environment.GetEnvironmentVariable("LICENSE_KEY") ?? "",
+    apiUrl: "https://api-keybox.vercel.app" // optional
+);
+```
+
+#### Parameters
+
+<ParamField path="app" type="WebApplication" required>
+  Your ASP.NET Core WebApplication instance (passed as `this` for extension method)
+</ParamField>
+
+<ParamField path="productName" type="string" required>
+  The name of your product as configured in KeyBox
+</ParamField>
+
+<ParamField path="key" type="string" required>
+  The license key
+</ParamField>
+
+<ParamField path="apiUrl" type="string" default="https://api-keybox.vercel.app">
+  The KeyBox API base URL
+</ParamField>
+
+#### Behavior
+
+<Steps>
+  <Step title="Activate license">
+    Calls `ActivateLicenseAsync()` - exits with code 1 if activation fails
+  </Step>
+  
+  <Step title="Start daemon">
+    Begins background validation with automatic shutdown on revocation
+  </Step>
+  
+  <Step title="Run application">
+    Calls `app.RunAsync()` to start the web server
+  </Step>
+  
+  <Step title="Hard shutdown on revocation">
+    If license becomes invalid:
+    1. Stops the web application
+    2. Calls `Environment.Exit(1)` to terminate immediately
+  </Step>
+</Steps>
+
+<Warning>
+  This method uses `Environment.Exit(1)` for hard shutdown when license is revoked. This ensures the application cannot continue running with an invalid license.
+</Warning>
+
+#### Example: Configuration with appsettings.json
+
+```csharp Program.cs
+using KeyboxSdk;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Add services
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+app.UseHttpsRedirection();
+app.UseAuthorization();
+app.MapControllers();
+
+app.MapGet("/", () => new
+{
+    Message = "API is running",
+    Version = "1.0.0"
+});
+
+// Protect the entire application
+await app.RunProtectedAsync(
+    productName: builder.Configuration["KeyBox:ProductName"] ?? "My API",
+    key: builder.Configuration["KeyBox:LicenseKey"] ?? "",
+    apiUrl: builder.Configuration["KeyBox:ApiUrl"] ?? "https://api-keybox.vercel.app"
+);
+```
+
+```json appsettings.json
+{
+  "KeyBox": {
+    "ProductName": "My API",
+    "LicenseKey": "kb_xxxxxxxxxxxxx",
+    "ApiUrl": "https://api-keybox.vercel.app"
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information"
+    }
+  }
+}
+```
+
+---
+
+## Complete Examples
+
+### Example 1: Minimal API
+
+```csharp Program.cs
+using KeyboxSdk;
+
+var builder = WebApplication.CreateBuilder(args);
+var app = builder.Build();
+
+app.MapGet("/", () => new
+{
+    Message = "This API is protected by KeyBox",
+    Timestamp = DateTime.UtcNow
+});
+
+app.MapGet("/api/data", () => new
+{
+    Data = new[] { 1, 2, 3, 4, 5 },
+    Count = 5
+});
+
+app.MapPost("/api/data", (DataRequest request) => new
+{
+    Received = request,
+    Message = "Data saved successfully"
+});
+
+try
+{
+    await app.RunProtectedAsync(
+        productName: "My API",
+        key: Environment.GetEnvironmentVariable("LICENSE_KEY") ?? ""
+    );
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Failed to start: {ex.Message}");
+    Environment.Exit(1);
+}
+
+record DataRequest(string Name, string Value);
+```
+
+### Example 2: Console Application
+
+```csharp Program.cs
+using KeyboxSdk;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+
+class Program
+{
+    static async Task Main(string[] args)
+    {
+        Console.WriteLine("Starting licensed console application...");
+        
+        // Activate on startup
+        try
+        {
+            var result = await KeyboxClient.ActivateLicenseAsync(
+                productName: "My Console App",
+                key: Environment.GetEnvironmentVariable("LICENSE_KEY") ?? ""
+            );
+            
+            Console.WriteLine($"✓ License activated: {result.Status}");
+            if (result.ExpiresAt != null)
+                Console.WriteLine($"  Expires: {result.ExpiresAt}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"✗ License activation failed: {ex.Message}");
+            Console.WriteLine("Please contact support with a valid license key.");
+            Environment.Exit(1);
+        }
+        
+        // Start background validation
+        await KeyboxClient.StartLicenseDaemonAsync(
+            productName: "My Console App",
+            key: Environment.GetEnvironmentVariable("LICENSE_KEY") ?? "",
+            onStop: async (data) =>
+            {
+                Console.WriteLine($"\n⚠ License {data.Status}: {data.Message}");
+                Console.WriteLine("The application will now exit.");
+                Environment.Exit(1);
+            }
+        );
+        
+        Console.WriteLine("✓ License monitoring active");
+        Console.WriteLine("Running application...\n");
+        
+        // Your application logic here
+        await RunApplicationAsync();
+        
+        // Cleanup
+        KeyboxClient.StopLicenseDaemon();
+    }
+    
+    static async Task RunApplicationAsync()
+    {
+        // Simulate long-running work
+        while (true)
+        {
+            Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] Processing...");
+            await Task.Delay(5000);
+        }
+    }
+}
+```
+
+### Example 3: WPF Desktop Application
+
+```csharp App.xaml.cs
+using System;
+using System.Windows;
+using KeyboxSdk;
+
+namespace MyWpfApp
+{
+    public partial class App : Application
+    {
+        protected override async void OnStartup(StartupEventArgs e)
+        {
+            base.OnStartup(e);
+            
+            // Activate license before showing main window
+            try
+            {
+                var result = await KeyboxClient.ActivateLicenseAsync(
+                    productName: "My WPF App",
+                    key: Environment.GetEnvironmentVariable("LICENSE_KEY") ?? ""
+                );
+                
+                MessageBox.Show(
+                    $"License activated: {result.Status}",
+                    "KeyBox",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information
+                );
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"License activation failed: {ex.Message}\n\nThe application will now close.",
+                    "KeyBox Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error
+                );
+                Shutdown(1);
+                return;
+            }
+            
+            // Start background validation
+            await KeyboxClient.StartLicenseDaemonAsync(
+                productName: "My WPF App",
+                key: Environment.GetEnvironmentVariable("LICENSE_KEY") ?? "",
+                onStop: async (data) =>
+                {
+                    MessageBox.Show(
+                        $"License {data.Status}: {data.Message}\n\nThe application will now close.",
+                        "KeyBox",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning
+                    );
+                    Dispatcher.Invoke(() => Shutdown(1));
+                }
+            );
+            
+            // Show main window
+            var mainWindow = new MainWindow();
+            mainWindow.Show();
+        }
+        
+        protected override void OnExit(ExitEventArgs e)
+        {
+            KeyboxClient.StopLicenseDaemon();
+            base.OnExit(e);
+        }
+    }
+}
+```
+
+### Example 4: Background Service
+
+```csharp Worker.cs
+using KeyboxSdk;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace MyWorkerService
+{
+    public class Worker : BackgroundService
+    {
+        private readonly ILogger<Worker> _logger;
+        private readonly IConfiguration _configuration;
+        
+        public Worker(ILogger<Worker> logger, IConfiguration configuration)
+        {
+            _logger = logger;
+            _configuration = configuration;
+        }
+        
+        public override async Task StartAsync(CancellationToken cancellationToken)
+        {
+            _logger.LogInformation("Activating license...");
+            
+            try
+            {
+                var result = await KeyboxClient.ActivateLicenseAsync(
+                    productName: _configuration["KeyBox:ProductName"] ?? "My Service",
+                    key: _configuration["KeyBox:LicenseKey"] ?? ""
+                );
+                
+                _logger.LogInformation("License activated: {Status}", result.Status);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to activate license");
+                throw;
+            }
+            
+            // Start daemon
+            await KeyboxClient.StartLicenseDaemonAsync(
+                productName: _configuration["KeyBox:ProductName"] ?? "My Service",
+                key: _configuration["KeyBox:LicenseKey"] ?? "",
+                onStop: async (data) =>
+                {
+                    _logger.LogError("License {Status}: {Message}", data.Status, data.Message);
+                    _logger.LogInformation("Stopping service due to license revocation");
+                    Environment.Exit(1);
+                }
+            );
+            
+            await base.StartAsync(cancellationToken);
+        }
+        
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        {
+            while (!stoppingToken.IsCancellationRequested)
+            {
+                _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
+                await Task.Delay(10000, stoppingToken);
+            }
+        }
+        
+        public override Task StopAsync(CancellationToken cancellationToken)
+        {
+            KeyboxClient.StopLicenseDaemon();
+            return base.StopAsync(cancellationToken);
+        }
+    }
+}
+```
+
+---
+
+## Logging
+
+The SDK logs all license-related events to the console:
+
+```
+[2026-03-05T10:30:00.0000000Z] [KEYBOX] [INFO] Activating license {"productName":"My API"}
+[2026-03-05T10:30:01.0000000Z] [KEYBOX] [INFO] License activated {"Status":"active","ExpiresAt":"2027-03-05"}
+[2026-03-05T10:30:01.1000000Z] [KEYBOX] [INFO] License daemon started {"intervalSeconds":900}
+```
+
+Log levels:
+- `INFO` - Normal operations and state changes
+- `ERROR` - Validation errors and failures
+
+---
+
+## Troubleshooting
+
+### ArgumentException: "productName and key are required"
+
+Make sure you're passing both parameters and they're not empty:
+
+```csharp
+await KeyboxClient.ActivateLicenseAsync(
+    productName: "My Product",     // Required, non-empty
+    key: "kb_xxxxxxxxxxxxx"         // Required, non-empty
+);
+```
+
+### Exception: License activation failed
+
+Check:
+1. License key is correct
+2. Product name matches exactly (case-sensitive)
+3. License is not expired or revoked in the dashboard
+4. Application can reach `https://api-keybox.vercel.app`
+5. No firewall blocking HTTPS requests
+
+### App doesn't shutdown on revocation
+
+Make sure:
+1. You've provided an `onStop` callback
+2. The callback calls `Environment.Exit(1)` for hard shutdown
+3. No exception handlers are catching the exit
+
+### Timer disposal warnings
+
+If you see timer disposal warnings, ensure you call `StopLicenseDaemon()` before application exit:
+
+```csharp
+AppDomain.CurrentDomain.ProcessExit += (s, e) =>
+{
+    KeyboxClient.StopLicenseDaemon();
+};
+```
+
+---
+
+## Dependency Information
+
+**Target Framework:** .NET 8.0
+
+**Dependencies:**
+- `Microsoft.AspNetCore.App` (framework reference)
+- Built-in `System.Net.Http` for HTTP requests
+- Built-in `System.Text.Json` for JSON serialization
+
+**NuGet Package:** [KeyboxSdk](https://www.nuget.org/packages/KeyboxSdk) v1.0.2
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Node.js SDK" icon="node-js" href="/sdks/node-sdk">
+    Explore the Node.js SDK for Express apps
+  </Card>
+  <Card title="Python SDK" icon="python" href="/sdks/python-sdk">
+    Learn about the Python SDK for FastAPI
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference">
+    Complete API endpoint documentation
+  </Card>
+  <Card title="Examples" icon="flask" href="/examples">
+    More integration examples and patterns
+  </Card>
+</CardGroup>

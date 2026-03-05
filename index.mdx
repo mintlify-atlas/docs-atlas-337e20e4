@@ -1,97 +1,167 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "KeyBox"
+description: "A license key manager that generates, validates, and revokes access to your software"
 ---
 
-## Setting up
+<div style={{
+  background: 'linear-gradient(135deg, #0A0A0A 0%, #1a1a1a 100%)',
+  padding: '60px 40px',
+  borderRadius: '8px',
+  border: '1px solid rgba(255, 255, 255, 0.1)',
+  boxShadow: '0 0 12px rgba(255, 255, 255, 0.2)',
+  marginBottom: '40px'
+}}>
+  <h1 style={{
+    fontFamily: 'Courier New, monospace',
+    fontSize: '48px',
+    fontWeight: 700,
+    color: '#FFFFFF',
+    marginBottom: '20px',
+    textAlign: 'center'
+  }}>
+    KeyBox
+  </h1>
+  <p style={{
+    fontFamily: 'Courier New, monospace',
+    fontSize: '16px',
+    color: '#9dcadb',
+    textAlign: 'center',
+    maxWidth: '700px',
+    margin: '0 auto 30px',
+    lineHeight: '1.6'
+  }}>
+    A license key manager that generates, validates, and revokes access to your software. Protect your applications with machine-bound licenses, real-time validation, and multi-language SDK support.
+  </p>
+  <div style={{ display: 'flex', justifyContent: 'center', gap: '15px', flexWrap: 'wrap' }}>
+    <a href="/quickstart" style={{
+      background: '#ffffff',
+      color: '#000000',
+      padding: '12px 30px',
+      borderRadius: '12px',
+      fontFamily: 'Courier New, monospace',
+      fontWeight: 700,
+      textDecoration: 'none',
+      display: 'inline-block'
+    }}>
+      Get Started
+    </a>
+    <a href="/api/overview" style={{
+      background: 'transparent',
+      color: '#ffffff',
+      padding: '12px 30px',
+      borderRadius: '12px',
+      border: '2px solid #ffffff',
+      fontFamily: 'Courier New, monospace',
+      fontWeight: 700,
+      textDecoration: 'none',
+      display: 'inline-block'
+    }}>
+      API Reference
+    </a>
+  </div>
+</div>
 
-Get your documentation site up and running in minutes.
+## Key Features
 
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
-
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+<CardGroup cols={2}>
+  <Card title="License Generation" icon="key" href="/dashboard/creating-licenses">
+    Generate unique license keys with configurable durations and services
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="Real-time Validation" icon="shield-check" href="/api/validate-license">
+    Validate licenses instantly with Redis caching for optimal performance
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="Machine Binding" icon="lock" href="/concepts/machine-binding">
+    Lock licenses to specific machines for enhanced security
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
+  <Card title="Auto Expiration" icon="clock" href="/concepts/license-lifecycle">
+    Automatically expire and revoke licenses based on configured rules
   </Card>
-</Columns>
+  <Card title="Multi-Language SDKs" icon="code" href="/sdks/overview">
+    Integrate with Node.js, Python, or .NET applications
+  </Card>
+  <Card title="Background Daemon" icon="rotate" href="/sdks/node-sdk">
+    Continuous validation with background processes
+  </Card>
+  <Card title="Dashboard Management" icon="chart-simple" href="/dashboard/overview">
+    Manage clients, projects, and licenses from a web dashboard
+  </Card>
+  <Card title="OAuth Integration" icon="user" href="/api/authentication">
+    Secure authentication with Google OAuth support
+  </Card>
+</CardGroup>
 
-## Create beautiful pages
+## Quick Start
 
-Everything you need to create world-class documentation.
+Get up and running with KeyBox in minutes.
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
+<Steps>
+  <Step title="Choose Your SDK">
+    Select the SDK that matches your application stack
+    
+    <CardGroup cols={3}>
+      <Card title="Node.js" icon="node-js" href="/sdks/node-sdk">
+        For Express and Node.js apps
+      </Card>
+      <Card title="Python" icon="python" href="/sdks/python-sdk">
+        For FastAPI and Python apps
+      </Card>
+      <Card title=".NET" icon="microsoft" href="/sdks/dotnet-sdk">
+        For ASP.NET Core apps
+      </Card>
+    </CardGroup>
+  </Step>
+  
+  <Step title="Integrate the SDK">
+    Install and configure the KeyBox SDK in your application
+    
+    ```bash npm
+    npm install keybox-sdk
+    ```
+  </Step>
+  
+  <Step title="Protect Your App">
+    Add license validation to secure your application
+    
+    ```javascript
+    import { protectNodeApp } from 'keybox-sdk';
+    
+    await protectNodeApp({
+      app,
+      port: 3000,
+      productName: 'your-product',
+      key: process.env.LICENSE_KEY
+    });
+    ```
+  </Step>
+</Steps>
 
-## Need inspiration?
+## Use Cases
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+<CardGroup cols={2}>
+  <Card title="SaaS Applications" icon="cloud">
+    Control access to your SaaS platform with time-based licenses
+  </Card>
+  <Card title="Desktop Software" icon="desktop">
+    Protect desktop applications with machine-locked licenses
+  </Card>
+  <Card title="API Services" icon="globe">
+    Manage API access with validated license keys
+  </Card>
+  <Card title="Enterprise Tools" icon="building">
+    Deploy licensed software to enterprise clients
+  </Card>
+</CardGroup>
+
+## Learn More
+
+<CardGroup cols={3}>
+  <Card title="How It Works" icon="lightbulb" href="/concepts/how-it-works">
+    Understand KeyBox architecture
+  </Card>
+  <Card title="Dashboard Guide" icon="gauge" href="/dashboard/overview">
+    Manage licenses via dashboard
+  </Card>
+  <Card title="Deploy KeyBox" icon="rocket" href="/deployment/backend-setup">
+    Self-host the platform
+  </Card>
+</CardGroup>

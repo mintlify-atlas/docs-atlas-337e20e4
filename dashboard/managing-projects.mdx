@@ -1,0 +1,345 @@
+---
+title: 'Managing Projects'
+description: 'Create and configure projects with automatic license generation'
+icon: 'folder-open'
+---
+
+## Overview
+
+Projects in KeyBox represent specific products, services, or applications that you're licensing to clients. Each project belongs to a client and automatically generates a license key when created.
+
+<Info>
+  When you create a project, KeyBox automatically generates an associated license key with your specified configuration.
+</Info>
+
+## Creating a Project
+
+The **Create Project & License** card provides a streamlined workflow for project setup.
+
+<Steps>
+  <Step title="Select a Client">
+    Open the client dropdown and choose which client this project belongs to.
+    
+    <Note>
+      You must have at least one client created before you can add projects.
+    </Note>
+  </Step>
+  
+  <Step title="Enter Project Name">
+    Give your project a descriptive name that identifies the product or service.
+    
+    ```text
+    Examples:
+    - "E-commerce Website"
+    - "Mobile App Pro"
+    - "WordPress Hosting"
+    ```
+  </Step>
+  
+  <Step title="Set License Duration">
+    Enter the number of months the license should remain valid (1-12 months).
+    
+    The system displays a preview of the expiration date as you type.
+    
+    ```text
+    Duration: 6 months
+    → License will expire on: September 5, 2026
+    ```
+  </Step>
+  
+  <Step title="Select Services">
+    Choose which services are included in this project license.
+    
+    Available services:
+    - **Hosting**: Server hosting services
+    - **Domain**: Domain name registration
+    
+    You can select one or both services.
+  </Step>
+  
+  <Step title="Create the Project">
+    Click **Create Project & License** to generate the project and its license key.
+    
+    A success notification confirms creation, and the project appears under its client in the dashboard.
+  </Step>
+</Steps>
+
+## Project Configuration
+
+### Required Fields
+
+<CardGroup cols={2}>
+  <Card title="Client" icon="user">
+    The parent client that owns this project (required)
+  </Card>
+  <Card title="Project Name" icon="tag">
+    Descriptive name for identification (required)
+  </Card>
+  <Card title="Duration" icon="calendar">
+    License validity period in months, 1-12 (required)
+  </Card>
+  <Card title="Services" icon="server">
+    At least one service must be selected (required)
+  </Card>
+</CardGroup>
+
+### Service Selection
+
+Services are displayed as toggle buttons:
+
+- **Selected**: White background with checkmark icon
+- **Unselected**: Gray background, clickable to enable
+
+Click any service button to toggle its selection. Both services can be active simultaneously.
+
+<Note>
+  The services you select will be embedded in the license key and validated by your application using the KeyBox SDK.
+</Note>
+
+## Duration Configuration
+
+### Duration Limits
+
+The duration field enforces automatic boundaries:
+
+- **Minimum**: 1 month
+- **Maximum**: 12 months
+
+If you enter a value outside these limits, the system automatically adjusts to the nearest valid value.
+
+### Expiration Preview
+
+As you enter a duration, a real-time preview appears showing:
+
+- Green indicator dot (pulsing animation)
+- "License will expire on:" label
+- Calculated expiration date in full format
+
+```text
+License will expire on: March 5, 2027
+```
+
+<Warning>
+  The duration starts when the license is **activated**, not when it's created. Pending licenses don't consume their duration until first activation.
+</Warning>
+
+## Viewing Projects
+
+Projects appear nested under their parent client in the dashboard.
+
+### Project Card Components
+
+<Steps>
+  <Step title="Expand the Client">
+    Click the client card to reveal all projects under that client.
+  </Step>
+  
+  <Step title="Locate the Project Card">
+    Each project has its own card with a distinct background color.
+  </Step>
+  
+  <Step title="View Project Header">
+    The header shows:
+    - Project name with folder icon
+    - License expiration badge (color-coded by urgency)
+    - Status information
+  </Step>
+  
+  <Step title="Check License Table">
+    Below the header, a table displays all license details including the key, services, and actions.
+  </Step>
+</Steps>
+
+### Project Status Badges
+
+The project header displays different badges based on license state:
+
+#### Pending Status
+```text
+Status: Starts on Activation (6 Months)
+```
+- Gray badge with subtle styling
+- Indicates license hasn't been activated yet
+- Shows the configured duration
+
+#### Active Status
+```text
+Expires: Sep 5, 2026
+```
+- Color-coded by remaining time:
+  - **Green**: More than 80% remaining
+  - **Yellow**: 30-80% remaining  
+  - **Red (pulsing)**: Less than 30% remaining
+
+#### Expired Status
+```text
+License Has Been Expired
+```
+- Red badge indicating the license is no longer valid
+
+## Project License Details
+
+### License Table
+
+Each project card contains a table with these columns:
+
+| Column | Features |
+|--------|----------|
+| **License Key** | • Masked display (first 8 chars + dots)<br/>• Eye icon to show/hide full key<br/>• Copy icon to copy to clipboard |
+| **Services** | • Rounded badges for each service<br/>• Color-coded for visual distinction |
+| **Status** | • Active, Pending, Revoked, or Expired badge<br/>• Color-coded indicators |
+| **Actions** | • Toggle switch for activation/revocation<br/>• Disabled for expired licenses |
+
+### Managing License Keys
+
+<Steps>
+  <Step title="View Full Key">
+    Click the eye icon next to a masked license key to reveal the complete key.
+  </Step>
+  
+  <Step title="Copy Key">
+    Click the copy icon to copy the license key to your clipboard.
+    
+    The icon changes to a green checkmark briefly to confirm the copy action.
+  </Step>
+  
+  <Step title="Activate License">
+    For pending licenses, toggle the switch in the Actions column to activate.
+    
+    <Note>
+      Activation starts the license duration timer. This action cannot be undone.
+    </Note>
+  </Step>
+  
+  <Step title="Revoke License">
+    For active licenses, toggle the switch to revoke access.
+    
+    The license can be reactivated later, and the duration continues from where it left off.
+  </Step>
+</Steps>
+
+## Project Workflows
+
+### Standard Project Creation
+
+<Steps>
+  <Step title="Client Setup">
+    Ensure you have a client created for this project.
+  </Step>
+  
+  <Step title="Define Requirements">
+    Determine:
+    - How long the license should last
+    - Which services are needed
+    - What the project represents
+  </Step>
+  
+  <Step title="Create Project">
+    Fill out the creation form with your configuration.
+  </Step>
+  
+  <Step title="Share License Key">
+    Copy the generated license key and provide it to your client.
+  </Step>
+  
+  <Step title="Monitor Status">
+    Track activation and expiration through the dashboard.
+  </Step>
+</Steps>
+
+### Multi-Project Setup
+
+For clients with multiple products:
+
+1. Create separate projects for each product or service tier
+2. Configure different durations based on subscription plans
+3. Select appropriate services for each project's scope
+4. Use clear naming conventions to distinguish projects
+
+```text
+Example Project Structure:
+
+Client: Acme Corporation
+├── Website Hosting (12 months, Hosting + Domain)
+├── Email Server (6 months, Hosting only)
+└── Landing Page (3 months, Hosting + Domain)
+```
+
+## Best Practices
+
+### Project Naming
+
+<CardGroup cols={2}>
+  <Card title="Be Descriptive" icon="text">
+    Use names that clearly identify the product or service
+  </Card>
+  <Card title="Include Version" icon="code-branch">
+    For software products, consider including version numbers
+  </Card>
+  <Card title="Add Tier Info" icon="layer-group">
+    Specify plan levels: "Pro Plan", "Enterprise Edition"
+  </Card>
+  <Card title="Use Consistent Format" icon="align-left">
+    Maintain naming patterns across all projects
+  </Card>
+</CardGroup>
+
+### Duration Strategy
+
+- **Monthly Services**: Use 1-3 month licenses for flexible, short-term arrangements
+- **Annual Contracts**: Set 12-month durations for yearly subscriptions
+- **Trial Periods**: Use 1-month licenses for trial or evaluation periods
+- **Quarterly Billing**: Configure 3-month licenses aligned with billing cycles
+
+### Service Selection
+
+<Note>
+  Choose services based on what your application will validate:
+  - Select **Hosting** only if the client needs just server access
+  - Select **Domain** only for domain management services
+  - Select **both** for complete hosting packages
+</Note>
+
+## Troubleshooting
+
+### "Failed to create project" Error
+
+<AccordionGroup>
+  <Accordion title="No client selected">
+    Ensure you've selected a client from the dropdown before creating the project.
+  </Accordion>
+  
+  <Accordion title="Invalid duration">
+    Check that duration is between 1 and 12 months. The field should auto-correct, but manual entries may cause issues.
+  </Accordion>
+  
+  <Accordion title="No services selected">
+    At least one service must be selected. Click on Hosting, Domain, or both.
+  </Accordion>
+  
+  <Accordion title="Backend connection error">
+    Verify your backend server is running and accessible. Check the browser console for specific error messages.
+  </Accordion>
+</AccordionGroup>
+
+### Project Not Appearing
+
+If a project doesn't show after creation:
+
+1. **Expand the client card**: Projects are hidden until you expand the parent client
+2. **Check success notification**: Verify you saw the "Project created successfully!" message
+3. **Refresh the page**: Sometimes a manual refresh helps load the latest data
+4. **Check browser console**: Look for any JavaScript errors that might prevent rendering
+
+## What's Next?
+
+After creating projects, you can:
+
+<CardGroup cols={2}>
+  <Card title="Manage Licenses" icon="key" href="/dashboard/creating-licenses">
+    Learn how to activate, revoke, and monitor license keys
+  </Card>
+  <Card title="Integrate SDKs" icon="code" href="/sdks/overview">
+    Implement license validation in your applications
+  </Card>
+</CardGroup>

@@ -1,0 +1,402 @@
+---
+title: Revoke License
+description: Revoke or reactivate a license by toggling its status
+---
+
+## Overview
+
+The revoke endpoint toggles a license status between ACTIVE and REVOKED. This allows you to temporarily or permanently disable a license without deleting it.
+
+## Endpoint
+
+```
+PATCH /license/revoke/:key
+```
+
+<Warning>
+  This endpoint requires authentication. Include a valid JWT token in the Authorization header.
+</Warning>
+
+## Authentication
+
+Include the JWT token in the Authorization header:
+
+```
+Authorization: Bearer <your-jwt-token>
+```
+
+## Request
+
+### URL Parameters
+
+<ParamField path="key" type="string" required>
+  The license key to revoke or reactivate
+</ParamField>
+
+### Example Request
+
+<CodeGroup>
+```bash cURL
+curl -X PATCH https://your-keybox-server.com/license/revoke/KB-PROJ123-XXXX-XXXX-XXXX \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+
+```javascript JavaScript
+const licenseKey = 'KB-PROJ123-XXXX-XXXX-XXXX';
+
+const response = await fetch(
+  `https://your-keybox-server.com/license/revoke/${licenseKey}`,
+  {
+    method: 'PATCH',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  }
+);
+
+const data = await response.json();
+```
+
+```python Python
+import requests
+
+license_key = 'KB-PROJ123-XXXX-XXXX-XXXX'
+
+headers = {
+    'Authorization': f'Bearer {token}'
+}
+
+response = requests.patch(
+    f'https://your-keybox-server.com/license/revoke/{license_key}',
+    headers=headers
+)
+
+data = response.json()
+```
+</CodeGroup>
+
+## Response
+
+### Success Response
+
+<ResponseField name="message" type="string">
+  Description of the status change
+</ResponseField>
+
+<ResponseField name="key" type="string">
+  The license key that was modified
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  The new status ("ACTIVE" or "REVOKED")
+</ResponseField>
+
+### Example Response - Revoked
+
+```json
+{
+  "message": "License status changed to REVOKED",
+  "key": "KB-PROJ123-XXXX-XXXX-XXXX",
+  "status": "REVOKED"
+}
+```
+
+### Example Response - Reactivated
+
+```json
+{
+  "message": "License status changed to ACTIVE",
+  "key": "KB-PROJ123-XXXX-XXXX-XXXX",
+  "status": "ACTIVE"
+}
+```
+
+## Toggle Behavior
+
+The endpoint toggles the license status:
+
+<Steps>
+  <Step title="Check Current Status">
+    Retrieve the current license status from the database
+  </Step>
+  
+  <Step title="Toggle Status">
+    If status is ACTIVE, change to REVOKED
+    
+    If status is REVOKED, change to ACTIVE
+  </Step>
+  
+  <Step title="Save Changes">
+    Update the license in the database
+  </Step>
+  
+  <Step title="Invalidate Cache">
+    Clear the Redis cache for this license to ensure fresh validation results
+  </Step>
+</Steps>
+
+<Note>
+  The toggle only works between ACTIVE and REVOKED states. Licenses with PENDING or EXPIRED status are not affected by this endpoint.
+</Note>
+
+## Cache Invalidation
+
+When a license is revoked or reactivated:
+
+1. The license status is updated in MongoDB
+2. The Redis cache entry for this license is invalidated
+3. Next validation request will fetch fresh data from MongoDB
+4. The new status is then cached for future requests
+
+This ensures that revocation takes effect immediately across all validation requests.
+
+## Impact on Validation
+
+### When Revoked
+
+After revoking a license, validation attempts will return:
+
+```json
+{
+  "valid": false,
+  "status": "revoked",
+  "message": "License revoked by developer"
+}
+```
+
+### When Reactivated
+
+After reactivating a license (toggle from REVOKED to ACTIVE), validation will succeed again:
+
+```json
+{
+  "valid": true,
+  "status": "active",
+  "duration": "12 months",
+  "expiresAt": 1704067200000
+}
+```
+
+<Warning>
+  Reactivating a license does not extend its expiration date. If the license expired while revoked, it will still be expired when reactivated.
+</Warning>
+
+## Error Responses
+
+### Missing License Key
+
+**Status Code**: 400
+
+```json
+{
+  "message": "License key is required"
+}
+```
+
+### License Not Found
+
+**Status Code**: 404
+
+```json
+{
+  "message": "License not found"
+}
+```
+
+### Unauthorized
+
+**Status Code**: 401
+
+```json
+{
+  "message": "No token provided"
+}
+```
+
+### Server Error
+
+**Status Code**: 500
+
+```json
+{
+  "message": "Failed to toggle status",
+  "error": "Detailed error message"
+}
+```
+
+## Use Cases
+
+<AccordionGroup>
+  <Accordion title="Payment Issues">
+    Revoke licenses when payment fails or subscription is cancelled. Reactivate when payment is resumed.
+  </Accordion>
+
+  <Accordion title="Policy Violations">
+    Temporarily revoke licenses for policy violations. Reactivate once issues are resolved.
+  </Accordion>
+
+  <Accordion title="Support Holds">
+    Disable licenses during support investigations or account reviews.
+  </Accordion>
+
+  <Accordion title="Testing">
+    Temporarily disable licenses for testing without deleting them.
+  </Accordion>
+</AccordionGroup>
+
+## Complete Example
+
+<CodeGroup>
+```javascript JavaScript
+class LicenseManager {
+  constructor(serverUrl, authToken) {
+    this.serverUrl = serverUrl;
+    this.authToken = authToken;
+  }
+
+  async toggleLicense(licenseKey) {
+    try {
+      const response = await fetch(
+        `${this.serverUrl}/license/revoke/${licenseKey}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${this.authToken}`
+          }
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log(data.message);
+      console.log(`New status: ${data.status}`);
+      
+      return data;
+    } catch (error) {
+      console.error('Failed to toggle license:', error);
+      throw error;
+    }
+  }
+
+  async revokeLicense(licenseKey) {
+    const result = await this.toggleLicense(licenseKey);
+    if (result.status !== 'REVOKED') {
+      // If it's not revoked after toggle, toggle again
+      return await this.toggleLicense(licenseKey);
+    }
+    return result;
+  }
+
+  async reactivateLicense(licenseKey) {
+    const result = await this.toggleLicense(licenseKey);
+    if (result.status !== 'ACTIVE') {
+      // If it's not active after toggle, toggle again
+      return await this.toggleLicense(licenseKey);
+    }
+    return result;
+  }
+}
+
+// Usage
+const manager = new LicenseManager(
+  'https://your-keybox-server.com',
+  'your-jwt-token'
+);
+
+// Toggle status
+await manager.toggleLicense('KB-PROJ123-XXXX-XXXX-XXXX');
+
+// Explicitly revoke
+await manager.revokeLicense('KB-PROJ123-XXXX-XXXX-XXXX');
+
+// Explicitly reactivate
+await manager.reactivateLicense('KB-PROJ123-XXXX-XXXX-XXXX');
+```
+
+```python Python
+import requests
+
+class LicenseManager:
+    def __init__(self, server_url, auth_token):
+        self.server_url = server_url
+        self.auth_token = auth_token
+
+    def toggle_license(self, license_key):
+        try:
+            headers = {
+                'Authorization': f'Bearer {self.auth_token}'
+            }
+            
+            response = requests.patch(
+                f'{self.server_url}/license/revoke/{license_key}',
+                headers=headers
+            )
+            
+            response.raise_for_status()
+            data = response.json()
+            
+            print(data['message'])
+            print(f"New status: {data['status']}")
+            
+            return data
+        except Exception as error:
+            print(f'Failed to toggle license: {error}')
+            raise
+
+    def revoke_license(self, license_key):
+        result = self.toggle_license(license_key)
+        if result['status'] != 'REVOKED':
+            # If not revoked after toggle, toggle again
+            return self.toggle_license(license_key)
+        return result
+
+    def reactivate_license(self, license_key):
+        result = self.toggle_license(license_key)
+        if result['status'] != 'ACTIVE':
+            # If not active after toggle, toggle again
+            return self.toggle_license(license_key)
+        return result
+
+# Usage
+manager = LicenseManager(
+    'https://your-keybox-server.com',
+    'your-jwt-token'
+)
+
+# Toggle status
+manager.toggle_license('KB-PROJ123-XXXX-XXXX-XXXX')
+
+# Explicitly revoke
+manager.revoke_license('KB-PROJ123-XXXX-XXXX-XXXX')
+
+# Explicitly reactivate
+manager.reactivate_license('KB-PROJ123-XXXX-XXXX-XXXX')
+```
+</CodeGroup>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Audit Trail" icon="clipboard-list">
+    Log all revocations and reactivations for compliance and auditing
+  </Card>
+  <Card title="User Communication" icon="envelope">
+    Notify users when their license is revoked or reactivated
+  </Card>
+  <Card title="Grace Period" icon="clock">
+    Consider a grace period before revoking for payment issues
+  </Card>
+  <Card title="Automation" icon="robot">
+    Automate revocation based on business rules (e.g., payment failures)
+  </Card>
+</CardGroup>
+
+## See Also
+
+- [Create License](/api/create-license) - Generate new licenses
+- [Validate License](/api/validate-license) - Check license validity
+- [Dashboard](/api/dashboard) - View all licenses and their statuses
+- [License Lifecycle](/concepts/license-lifecycle) - Understanding license states

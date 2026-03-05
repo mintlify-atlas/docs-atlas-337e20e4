@@ -1,0 +1,171 @@
+---
+title: 'Dashboard Overview'
+description: 'Navigate and understand the KeyBox dashboard interface'
+icon: 'layout-dashboard'
+---
+
+## Welcome to Your Dashboard
+
+The KeyBox dashboard is your central hub for managing clients, projects, and licenses. It provides a comprehensive interface to control all aspects of your license management system.
+
+<img
+  className="block dark:hidden"
+  src="/images/dashboard-light.png"
+  alt="KeyBox Dashboard Light Mode"
+/>
+<img
+  className="hidden dark:block"
+  src="/images/dashboard-dark.png"
+  alt="KeyBox Dashboard Dark Mode"
+/>
+
+## Main Features
+
+The dashboard is organized into several key sections to streamline your workflow:
+
+<CardGroup cols={2}>
+  <Card title="Client Management" icon="users" href="/dashboard/managing-clients">
+    Create and organize clients with their contact information
+  </Card>
+  <Card title="Project Management" icon="folder" href="/dashboard/managing-projects">
+    Set up projects under clients with specific services
+  </Card>
+  <Card title="License Generation" icon="key" href="/dashboard/creating-licenses">
+    Generate and manage license keys for your projects
+  </Card>
+  <Card title="SDK Integration" icon="code" href="/sdks/overview">
+    Integrate license validation into your applications
+  </Card>
+</CardGroup>
+
+## Dashboard Layout
+
+### Top Navigation Bar
+
+The header contains:
+- **KeyBox Logo**: Click to return to the homepage
+- **SDK Usage Button**: Quick access to SDK integration guides
+- **User Menu**: View your account information and sign out
+
+### Quick Action Cards
+
+Two prominent cards provide immediate access to core functions:
+
+1. **Create New Client**: Add clients to your portfolio
+2. **Create Project & License**: Set up projects with automatic license generation
+
+### Clients & Projects Tree
+
+The main content area displays an expandable tree view showing:
+- All your clients with their project count
+- Projects nested under each client
+- License details for each project
+- Real-time status indicators
+
+<Note>
+  The dashboard automatically refreshes when you make changes, ensuring you always see the latest information.
+</Note>
+
+## Dashboard Sections
+
+### Client Cards
+
+Each client card shows:
+- Client name and icon
+- Total number of projects
+- **Bill** button for invoice generation
+- Expandable accordion to view project details
+
+### Project Cards
+
+Project cards display:
+- Project name and icon
+- License expiration date (color-coded by urgency)
+- License status badge
+- Detailed license information table
+
+### License Table
+
+For each project, you'll see a table with:
+
+| Column | Description |
+|--------|-------------|
+| **License Key** | Masked key with visibility toggle and copy button |
+| **Services** | Tags showing included services (Hosting, Domain, etc.) |
+| **Status** | Current status badge (Active, Pending, Revoked, Expired) |
+| **Actions** | Toggle button to activate/revoke licenses |
+
+## Status Indicators
+
+KeyBox uses color-coded indicators to help you quickly assess license health:
+
+<CardGroup cols={2}>
+  <Card title="Active" icon="circle-check" color="#10b981">
+    License is active and functioning normally
+  </Card>
+  <Card title="Pending" icon="clock" color="#f59e0b">
+    License is created but not yet activated by the client
+  </Card>
+  <Card title="Revoked" icon="ban" color="#ef4444">
+    License has been manually disabled
+  </Card>
+  <Card title="Expired" icon="calendar-xmark" color="#6b7280">
+    License duration has ended
+  </Card>
+</CardGroup>
+
+## Expiration Warnings
+
+The dashboard provides visual warnings based on remaining license time:
+
+- **Green Badge**: More than 80% of license duration remaining
+- **Yellow Badge**: 30-80% of duration remaining
+- **Red Badge (Pulsing)**: Less than 30% remaining - renewal recommended
+
+<Info>
+  Expired licenses cannot be reactivated. You'll need to create a new license for the project.
+</Info>
+
+## Quick Actions
+
+### Common Tasks
+
+<Steps>
+  <Step title="View License Key">
+    Click the eye icon next to any license key to reveal the full key
+  </Step>
+  <Step title="Copy License Key">
+    Click the copy icon to copy the key to your clipboard
+  </Step>
+  <Step title="Toggle License Status">
+    Use the switch in the Actions column to activate pending licenses or revoke active ones
+  </Step>
+  <Step title="Generate Invoice">
+    Click the **Bill** button on any client card to create an invoice
+  </Step>
+</Steps>
+
+## Navigation Tips
+
+<Note>
+  **Pro Tip**: Use the accordion controls to expand/collapse client sections and keep your workspace organized. Only one client can be expanded at a time.
+</Note>
+
+### Keyboard Shortcuts
+
+- **Enter**: Submit forms when creating clients or projects
+- **Escape**: Close dialog boxes
+- **Click & Drag**: Scroll through long license tables
+
+## Next Steps
+
+Now that you understand the dashboard layout, learn how to:
+
+<CardGroup cols={2}>
+  <Card title="Manage Clients" icon="user-plus" href="/dashboard/managing-clients">
+    Create and organize your client portfolio
+  </Card>
+  <Card title="Create Projects" icon="folder-plus" href="/dashboard/managing-projects">
+    Set up projects with custom configurations
+  </Card>
+</CardGroup>

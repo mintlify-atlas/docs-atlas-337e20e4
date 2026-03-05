@@ -1,0 +1,373 @@
+---
+title: Activate License
+description: Activate a license key on the current machine
+---
+
+## Overview
+
+The activate endpoint activates a license key on the current machine, binding it permanently to that specific machine. Once activated, the license can only be validated on the same machine.
+
+## Endpoint
+
+```
+POST /validate/activate
+```
+
+<Note>
+  This endpoint is rate-limited to 5 requests per IP address within a 15-minute window.
+</Note>
+
+## Request
+
+### Request Body
+
+<ParamField body="key" type="string" required>
+  The license key to activate
+</ParamField>
+
+### Example Request
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://your-keybox-server.com/validate/activate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "key": "KB-PROJ123-XXXX-XXXX-XXXX"
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://your-keybox-server.com/validate/activate', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    key: 'KB-PROJ123-XXXX-XXXX-XXXX'
+  })
+});
+
+const data = await response.json();
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    'https://your-keybox-server.com/validate/activate',
+    json={'key': 'KB-PROJ123-XXXX-XXXX-XXXX'}
+)
+
+data = response.json()
+```
+</CodeGroup>
+
+## Response
+
+### Success Response
+
+<ResponseField name="success" type="boolean">
+  Whether the activation was successful
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Description of the activation result
+</ResponseField>
+
+<ResponseField name="machineId" type="string">
+  The hashed machine ID the license is now bound to
+</ResponseField>
+
+<ResponseField name="activatedAt" type="date">
+  ISO timestamp of when the license was activated
+</ResponseField>
+
+<ResponseField name="expiresAt" type="date">
+  ISO timestamp of when the license will expire
+</ResponseField>
+
+### Example Response - First Activation
+
+```json
+{
+  "success": true,
+  "message": "License activated successfully",
+  "machineId": "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6",
+  "activatedAt": "2024-01-01T00:00:00.000Z",
+  "expiresAt": "2025-01-01T00:00:00.000Z"
+}
+```
+
+### Example Response - Already Activated (Same Machine)
+
+```json
+{
+  "success": true,
+  "message": "License already activated on this machine",
+  "activatedAt": "2024-01-01T00:00:00.000Z",
+  "expiresAt": "2025-01-01T00:00:00.000Z"
+}
+```
+
+## Activation Process
+
+<Steps>
+  <Step title="Generate Machine ID">
+    The server generates a unique, hashed machine ID based on hardware characteristics
+  </Step>
+  
+  <Step title="Check License Status">
+    The license status is verified (must be PENDING or ACTIVE)
+  </Step>
+  
+  <Step title="Bind to Machine">
+    For first-time activation, the license is bound to the current machine ID
+  </Step>
+  
+  <Step title="Set Expiration">
+    The expiration date is calculated based on the license duration
+  </Step>
+  
+  <Step title="Update Status">
+    License status is changed from PENDING to ACTIVE
+  </Step>
+  
+  <Step title="Invalidate Cache">
+    Redis cache is invalidated to ensure fresh validation results
+  </Step>
+</Steps>
+
+## License Duration
+
+When a license is activated for the first time:
+
+- **Issued At**: Set to the current date/time
+- **Expires At**: Calculated as `issuedAt + duration months`
+- **Duration**: Between 1-12 months (configured when license is created)
+
+<Warning>
+  The expiration period only begins when the license is first activated, not when it's created.
+</Warning>
+
+## Error Responses
+
+### Missing License Key
+
+**Status Code**: 400
+
+```json
+{
+  "success": false,
+  "message": "License key is required"
+}
+```
+
+### License Not Found
+
+**Status Code**: 404
+
+```json
+{
+  "success": false,
+  "message": "License not found"
+}
+```
+
+### License Revoked
+
+**Status Code**: 403
+
+```json
+{
+  "success": false,
+  "message": "License has been revoked"
+}
+```
+
+### License Expired
+
+**Status Code**: 403
+
+```json
+{
+  "success": false,
+  "message": "License has expired"
+}
+```
+
+### Already Activated on Different Machine
+
+**Status Code**: 403
+
+```json
+{
+  "success": false,
+  "message": "License already activated on another machine"
+}
+```
+
+### Rate Limit Exceeded
+
+**Status Code**: 429
+
+```json
+{
+  "success": false,
+  "errors": "too many requests, please try again later.",
+  "status": 429
+}
+```
+
+### Server Error
+
+**Status Code**: 500
+
+```json
+{
+  "success": false,
+  "message": "Activation failed",
+  "error": "Detailed error message"
+}
+```
+
+## Machine Binding Behavior
+
+<Accordion title="How machine binding works">
+  When a license is activated:
+
+  1. **Machine ID Generation**: A unique ID is generated based on hardware characteristics (CPU, motherboard, etc.) and then hashed for security
+  2. **First Activation**: The machine ID is stored with the license
+  3. **Subsequent Checks**: All validation requests verify the machine ID matches
+  4. **Security**: The hashed ID prevents reverse-engineering while ensuring uniqueness
+</Accordion>
+
+<Accordion title="What happens on different machines">
+  If you try to activate or validate a license on a different machine:
+
+  - **Activation**: Returns 403 error - "License already activated on another machine"
+  - **Validation**: Returns `machine_mismatch` status
+  - **Bypass**: The only way to use the license on a new machine is to revoke and recreate it
+</Accordion>
+
+<Accordion title="Machine ID stability">
+  The machine ID is based on stable hardware characteristics:
+
+  - Should remain consistent across reboots
+  - Should remain consistent across OS updates
+  - May change if hardware components are replaced
+  - Uses cryptographic hashing for security
+</Accordion>
+
+## Integration Example
+
+<CodeGroup>
+```javascript JavaScript
+class LicenseActivator {
+  constructor(serverUrl, licenseKey) {
+    this.serverUrl = serverUrl;
+    this.licenseKey = licenseKey;
+  }
+
+  async activate() {
+    try {
+      const response = await fetch(`${this.serverUrl}/validate/activate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ key: this.licenseKey })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        console.log('License activated successfully');
+        console.log('Expires at:', new Date(data.expiresAt));
+        return true;
+      } else {
+        console.error(`Activation failed: ${data.message}`);
+        return false;
+      }
+    } catch (error) {
+      console.error('Activation request failed:', error);
+      return false;
+    }
+  }
+}
+
+// Usage
+const activator = new LicenseActivator(
+  'https://your-keybox-server.com',
+  'KB-PROJ123-XXXX-XXXX-XXXX'
+);
+
+const activated = await activator.activate();
+if (!activated) {
+  console.error('Please check your license key and try again');
+}
+```
+
+```python Python
+import requests
+from datetime import datetime
+
+class LicenseActivator:
+    def __init__(self, server_url, license_key):
+        self.server_url = server_url
+        self.license_key = license_key
+
+    def activate(self):
+        try:
+            response = requests.post(
+                f'{self.server_url}/validate/activate',
+                json={'key': self.license_key}
+            )
+            
+            data = response.json()
+            
+            if data.get('success'):
+                print('License activated successfully')
+                expires_at = datetime.fromisoformat(data['expiresAt'].replace('Z', '+00:00'))
+                print(f'Expires at: {expires_at}')
+                return True
+            else:
+                print(f"Activation failed: {data.get('message')}")
+                return False
+        except Exception as error:
+            print(f'Activation request failed: {error}')
+            return False
+
+# Usage
+activator = LicenseActivator(
+    'https://your-keybox-server.com',
+    'KB-PROJ123-XXXX-XXXX-XXXX'
+)
+
+if not activator.activate():
+    print('Please check your license key and try again')
+```
+</CodeGroup>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="First-Run Only" icon="flag">
+    Only call activation once during initial setup or installation
+  </Card>
+  <Card title="Store Locally" icon="database">
+    Cache activation status to avoid repeated API calls
+  </Card>
+  <Card title="User Feedback" icon="message">
+    Provide clear feedback about activation success or failure
+  </Card>
+  <Card title="Handle Errors" icon="triangle-exclamation">
+    Gracefully handle all error scenarios with helpful messages
+  </Card>
+</CardGroup>
+
+## See Also
+
+- [Validate License](/api/validate-license) - Check license validity
+- [Create License](/api/create-license) - Generate new licenses
+- [Machine Binding](/concepts/machine-binding) - Understanding machine binding
+- [License Lifecycle](/concepts/license-lifecycle) - License states and transitions

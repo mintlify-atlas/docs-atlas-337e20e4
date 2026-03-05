@@ -1,0 +1,319 @@
+---
+title: Authentication
+description: Learn how to authenticate with the KeyBox API using JWT tokens
+---
+
+## Overview
+
+KeyBox uses JWT (JSON Web Tokens) for authenticating API requests. Protected endpoints require a valid JWT token in the Authorization header.
+
+## Authentication Methods
+
+KeyBox supports two authentication methods:
+
+1. **Email/Password Authentication** - Standard signup and login
+2. **Google OAuth** - OAuth-based authentication with Google
+
+## Signup
+
+Create a new user account.
+
+### Endpoint
+
+```
+POST /auth/signup
+```
+
+### Request Body
+
+<ParamField body="name" type="string" required>
+  User's full name
+</ParamField>
+
+<ParamField body="email" type="string" required>
+  User's email address
+</ParamField>
+
+<ParamField body="password" type="string" required>
+  Password (minimum 6 characters)
+</ParamField>
+
+<ParamField body="confirm_password" type="string" required>
+  Password confirmation (must match password)
+</ParamField>
+
+### Response
+
+<ResponseField name="message" type="string">
+  Success message
+</ResponseField>
+
+<ResponseField name="userId" type="string">
+  The ID of the created user
+</ResponseField>
+
+### Example Request
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://your-keybox-server.com/auth/signup \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "John Doe",
+    "email": "john@example.com",
+    "password": "securepass123",
+    "confirm_password": "securepass123"
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://your-keybox-server.com/auth/signup', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    name: 'John Doe',
+    email: 'john@example.com',
+    password: 'securepass123',
+    confirm_password: 'securepass123'
+  })
+});
+
+const data = await response.json();
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    'https://your-keybox-server.com/auth/signup',
+    json={
+        'name': 'John Doe',
+        'email': 'john@example.com',
+        'password': 'securepass123',
+        'confirm_password': 'securepass123'
+    }
+)
+
+data = response.json()
+```
+</CodeGroup>
+
+### Example Response
+
+```json
+{
+  "message": "Signup successful",
+  "userId": "60f7b3b3e6b3a72e8c8e4a1a"
+}
+```
+
+## Login
+
+Authenticate and receive a JWT token.
+
+### Endpoint
+
+```
+POST /auth/login
+```
+
+### Request Body
+
+<ParamField body="email" type="string" required>
+  User's email address
+</ParamField>
+
+<ParamField body="password" type="string" required>
+  User's password
+</ParamField>
+
+### Response
+
+<ResponseField name="message" type="string">
+  Success message
+</ResponseField>
+
+<ResponseField name="token" type="string">
+  JWT authentication token (expires in 30 minutes)
+</ResponseField>
+
+<ResponseField name="userId" type="string">
+  The user's ID
+</ResponseField>
+
+<ResponseField name="role" type="string">
+  The user's role (e.g., "DEVELOPER")
+</ResponseField>
+
+### Example Request
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://your-keybox-server.com/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "john@example.com",
+    "password": "securepass123"
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://your-keybox-server.com/auth/login', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    email: 'john@example.com',
+    password: 'securepass123'
+  })
+});
+
+const data = await response.json();
+const token = data.token;
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    'https://your-keybox-server.com/auth/login',
+    json={
+        'email': 'john@example.com',
+        'password': 'securepass123'
+    }
+)
+
+data = response.json()
+token = data['token']
+```
+</CodeGroup>
+
+### Example Response
+
+```json
+{
+  "message": "Login successful",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "userId": "60f7b3b3e6b3a72e8c8e4a1a",
+  "role": "DEVELOPER"
+}
+```
+
+## Using Authentication Tokens
+
+Once you have a JWT token, include it in the Authorization header for protected endpoints:
+
+```bash
+Authorization: Bearer <your-jwt-token>
+```
+
+### Example Authenticated Request
+
+<CodeGroup>
+```bash cURL
+curl -X GET https://your-keybox-server.com/dashboard \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+
+```javascript JavaScript
+const response = await fetch('https://your-keybox-server.com/dashboard', {
+  headers: {
+    'Authorization': `Bearer ${token}`
+  }
+});
+```
+
+```python Python
+import requests
+
+headers = {
+    'Authorization': f'Bearer {token}'
+}
+
+response = requests.get(
+    'https://your-keybox-server.com/dashboard',
+    headers=headers
+)
+```
+</CodeGroup>
+
+## Token Expiration
+
+<Warning>
+  JWT tokens expire after **30 minutes**. Implement token refresh logic in your application.
+</Warning>
+
+When a token expires, you'll receive a 401 Unauthorized response:
+
+```json
+{
+  "message": "Unauthorized",
+  "error": "jwt expired"
+}
+```
+
+## Google OAuth
+
+KeyBox also supports Google OAuth authentication. The OAuth routes are configured at the root level:
+
+- Initiate OAuth flow through your KeyBox instance
+- User is redirected to Google for authentication
+- Upon success, user is redirected back with authentication established
+
+<Note>
+  Users who sign up with Google OAuth cannot use password-based login and vice versa.
+</Note>
+
+## Error Responses
+
+### Missing Token
+
+```json
+{
+  "message": "No token provided"
+}
+```
+
+### Invalid Token Format
+
+```json
+{
+  "message": "Invalid token format"
+}
+```
+
+### Invalid Credentials
+
+```json
+{
+  "message": "Invalid credentials"
+}
+```
+
+### Google OAuth Account
+
+```json
+{
+  "message": "This account uses Google sign-in. Please login with Google."
+}
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Secure Storage" icon="lock">
+    Store JWT tokens securely (e.g., httpOnly cookies, secure storage)
+  </Card>
+  <Card title="Token Refresh" icon="rotate">
+    Implement automatic token refresh before expiration
+  </Card>
+  <Card title="HTTPS Only" icon="shield">
+    Always use HTTPS in production to protect tokens
+  </Card>
+  <Card title="Error Handling" icon="triangle-exclamation">
+    Handle 401 errors gracefully and redirect to login
+  </Card>
+</CardGroup>

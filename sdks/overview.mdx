@@ -1,0 +1,293 @@
+---
+title: 'SDK Overview'
+description: 'Choose the right KeyBox SDK for your application stack'
+---
+
+## Available SDKs
+
+KeyBox provides official SDKs for the most popular programming languages and frameworks. Each SDK offers the same core functionality with language-specific idioms and best practices.
+
+<CardGroup cols={3}>
+  <Card title="Node.js SDK" icon="node-js" href="/sdks/node-sdk">
+    For Express, Next.js, and Node.js applications
+  </Card>
+  <Card title="Python SDK" icon="python" href="/sdks/python-sdk">
+    For FastAPI, Django, and Python applications
+  </Card>
+  <Card title=".NET SDK" icon="microsoft" href="/sdks/dotnet-sdk">
+    For ASP.NET Core and .NET applications
+  </Card>
+</CardGroup>
+
+## Core Features
+
+All KeyBox SDKs provide:
+
+<AccordionGroup>
+  <Accordion title="License Activation" icon="key">
+    One-time activation to verify a license key before your application starts. Prevents unauthorized usage from the start.
+  </Accordion>
+  
+  <Accordion title="Background Validation Daemon" icon="rotate">
+    Continuous license validation every 15 minutes. Automatically shuts down your application if a license is revoked or expires.
+  </Accordion>
+  
+  <Accordion title="One-Line App Protection" icon="shield">
+    Framework-specific helpers that wrap your entire application with license protection in a single function call.
+  </Accordion>
+  
+  <Accordion title="Graceful Shutdown" icon="power-off">
+    When a license becomes invalid, the SDK gracefully closes connections and shuts down your application to prevent data corruption.
+  </Accordion>
+</AccordionGroup>
+
+## Choosing the Right SDK
+
+<Tabs>
+  <Tab title="Node.js">
+    **Best for:**
+    - Express.js applications
+    - Next.js API routes
+    - Electron desktop apps
+    - CLI tools built with Node.js
+    
+    **Package:** `keybox-sdk`
+    
+    **Current Version:** 1.0.1
+    
+    [View Node.js SDK Documentation →](/sdks/node-sdk)
+  </Tab>
+  
+  <Tab title="Python">
+    **Best for:**
+    - FastAPI applications
+    - Django projects
+    - Flask APIs
+    - Python CLI tools
+    - Data science applications
+    
+    **Package:** `keybox-sdk`
+    
+    **Current Version:** 0.1.1
+    
+    [View Python SDK Documentation →](/sdks/python-sdk)
+  </Tab>
+  
+  <Tab title=".NET">
+    **Best for:**
+    - ASP.NET Core Web APIs
+    - Blazor applications
+    - WPF desktop applications
+    - .NET MAUI mobile apps
+    - Console applications
+    
+    **Package:** `KeyboxSdk`
+    
+    **Current Version:** 1.0.2
+    
+    [View .NET SDK Documentation →](/sdks/dotnet-sdk)
+  </Tab>
+</Tabs>
+
+## Common Use Cases
+
+### Protecting a Web API
+
+All SDKs provide a simple way to protect your web API:
+
+<CodeGroup>
+```javascript Node.js
+import { protectNodeApp } from 'keybox-sdk';
+
+await protectNodeApp({
+  app: expressApp,
+  port: 3000,
+  productName: 'My API',
+  key: process.env.LICENSE_KEY
+});
+```
+
+```python Python
+from keybox_sdk.client import protect_fastapi_app
+
+protect_fastapi_app(
+    app=fastapi_app,
+    product_name="My API",
+    key=os.getenv("LICENSE_KEY")
+)
+```
+
+```csharp .NET
+using KeyboxSdk;
+
+await app.RunProtectedAsync(
+    productName: "My API",
+    key: Environment.GetEnvironmentVariable("LICENSE_KEY")
+);
+```
+</CodeGroup>
+
+### Manual License Management
+
+For applications that need more control:
+
+<CodeGroup>
+```javascript Node.js
+import { activateLicense, startLicenseDaemon } from 'keybox-sdk';
+
+// Activate once
+await activateLicense({
+  productName: 'My App',
+  key: licenseKey
+});
+
+// Start background validation
+await startLicenseDaemon({
+  productName: 'My App',
+  key: licenseKey,
+  onRevoke: (data) => {
+    console.error('License revoked:', data);
+    process.exit(1);
+  }
+});
+```
+
+```python Python
+from keybox_sdk.client import activate_license, start_license_daemon
+
+# Activate once
+activate_license(
+    product_name="My App",
+    key=license_key
+)
+
+# Start background validation
+def on_stop(data):
+    print(f"License invalid: {data}")
+    os._exit(1)
+
+start_license_daemon(
+    product_name="My App",
+    key=license_key,
+    on_stop=on_stop
+)
+```
+
+```csharp .NET
+using KeyboxSdk;
+
+// Activate once
+await KeyboxClient.ActivateLicenseAsync(
+    productName: "My App",
+    key: licenseKey
+);
+
+// Start background validation
+await KeyboxClient.StartLicenseDaemonAsync(
+    productName: "My App",
+    key: licenseKey,
+    onStop: async (data) => {
+        Console.WriteLine($"License invalid: {data.Message}");
+        Environment.Exit(1);
+    }
+);
+```
+</CodeGroup>
+
+## Configuration
+
+### API URL
+
+All SDKs default to the production KeyBox API at `https://api-keybox.vercel.app`. You can override this for self-hosted instances:
+
+<CodeGroup>
+```javascript Node.js
+await activateLicense({
+  productName: 'My App',
+  key: licenseKey,
+  apiUrl: 'https://your-domain.com'
+});
+```
+
+```python Python
+activate_license(
+    product_name="My App",
+    key=license_key,
+    api_url="https://your-domain.com"
+)
+```
+
+```csharp .NET
+await KeyboxClient.ActivateLicenseAsync(
+    productName: "My App",
+    key: licenseKey,
+    apiUrl: "https://your-domain.com"
+);
+```
+</CodeGroup>
+
+### Validation Interval
+
+All SDKs validate licenses every **15 minutes** (900 seconds) by default. This interval is fixed to balance license enforcement with API costs.
+
+<Note>
+  The validation daemon runs in the background and does not block your application. Network errors are handled gracefully - your app continues running if the validation server is temporarily unreachable.
+</Note>
+
+## Error Handling
+
+### Activation Errors
+
+All SDKs throw exceptions when activation fails:
+
+<CodeGroup>
+```javascript Node.js
+try {
+  await activateLicense({ productName, key });
+} catch (error) {
+  console.error('Activation failed:', error.message);
+  process.exit(1);
+}
+```
+
+```python Python
+try:
+    activate_license(product_name=product_name, key=key)
+except Exception as e:
+    print(f"Activation failed: {e}")
+    sys.exit(1)
+```
+
+```csharp .NET
+try
+{
+    await KeyboxClient.ActivateLicenseAsync(productName, key);
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Activation failed: {ex.Message}");
+    Environment.Exit(1);
+}
+```
+</CodeGroup>
+
+### Validation Errors
+
+The background daemon logs errors but keeps your app running during temporary network issues. Only permanent failures (revoked, expired, invalid) trigger shutdown.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Get started with KeyBox in under 5 minutes
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference">
+    Explore the complete API documentation
+  </Card>
+  <Card title="Examples" icon="flask" href="/examples">
+    See real-world integration examples
+  </Card>
+  <Card title="Troubleshooting" icon="wrench" href="/troubleshooting">
+    Common issues and solutions
+  </Card>
+</CardGroup>

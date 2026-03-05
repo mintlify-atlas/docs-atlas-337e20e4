@@ -1,0 +1,765 @@
+---
+title: 'Python SDK'
+description: 'Protect your Python and FastAPI applications with license validation'
+icon: 'python'
+---
+
+## Installation
+
+<Steps>
+  <Step title="Install the package">
+    Install the KeyBox SDK using pip:
+    
+    <CodeGroup>
+    ```bash pip
+    pip install keybox-sdk
+    ```
+    
+    ```bash poetry
+    poetry add keybox-sdk
+    ```
+    
+    ```bash pipenv
+    pipenv install keybox-sdk
+    ```
+    </CodeGroup>
+  </Step>
+  
+  <Step title="Import the SDK">
+    Import the functions you need from the client module:
+    
+    ```python
+    from keybox_sdk.client import (
+        activate_license,
+        start_license_daemon,
+        stop_license_daemon,
+        protect_fastapi_app
+    )
+    ```
+  </Step>
+  
+  <Step title="Get your license key">
+    Obtain a license key from your KeyBox dashboard or from your end users.
+  </Step>
+</Steps>
+
+## Quick Start
+
+### Protect a FastAPI App
+
+The fastest way to add license protection to a FastAPI application:
+
+```python main.py
+from fastapi import FastAPI
+from keybox_sdk.client import protect_fastapi_app
+import os
+
+app = FastAPI()
+
+@app.get("/")
+def read_root():
+    return {"message": "Hello from licensed app!"}
+
+@app.get("/api/data")
+def get_data():
+    return {"data": [1, 2, 3, 4, 5]}
+
+# Protect your app with a single function call
+protect_fastapi_app(
+    app=app,
+    product_name="My API",
+    key=os.getenv("LICENSE_KEY")
+)
+```
+
+<Warning>
+  The `protect_fastapi_app` function will:
+  1. Activate the license (raises exception if invalid)
+  2. Start background validation when the app starts
+  3. Automatically shutdown (hard exit) if license is revoked or expires
+</Warning>
+
+## API Reference
+
+### activate_license
+
+Activates a license key for your product. Call this once before starting your application.
+
+```python
+from keybox_sdk.client import activate_license
+
+result = activate_license(
+    product_name="My Product",
+    key="license-key-here",
+    api_url="https://api-keybox.vercel.app",  # optional
+    endpoint="/validate/activate"  # optional
+)
+
+print(result)
+# {
+#   'success': True,
+#   'valid': True,
+#   'status': 'active',
+#   'expiresAt': '2026-12-31T23:59:59Z'
+# }
+```
+
+#### Parameters
+
+<ParamField path="product_name" type="str" required>
+  The name of your product as configured in KeyBox dashboard
+</ParamField>
+
+<ParamField path="key" type="str" required>
+  The license key to activate
+</ParamField>
+
+<ParamField path="api_url" type="str" default="https://api-keybox.vercel.app">
+  The KeyBox API base URL. Override for self-hosted instances.
+</ParamField>
+
+<ParamField path="endpoint" type="str" default="/validate/activate">
+  The activation endpoint path
+</ParamField>
+
+#### Returns
+
+```python
+dict: {
+    'success': bool,
+    'valid': bool,
+    'status': str,
+    'expiresAt': str | None,
+    'message': str | None
+}
+```
+
+#### Raises
+
+- `ValueError` - If `product_name` or `key` is missing or empty
+- `RuntimeError` - If the license server returns an error or non-JSON response
+- `RuntimeError` - If activation fails for any reason (expired, revoked, invalid key, etc.)
+
+#### Example: Error Handling
+
+```python
+import sys
+from keybox_sdk.client import activate_license
+
+try:
+    result = activate_license(
+        product_name="My Product",
+        key=os.getenv("LICENSE_KEY")
+    )
+    
+    print(f"License activated: {result['status']}")
+    print(f"Expires at: {result.get('expiresAt')}")
+except ValueError as e:
+    print(f"Configuration error: {e}")
+    sys.exit(1)
+except RuntimeError as e:
+    print(f"Failed to activate license: {e}")
+    sys.exit(1)
+```
+
+---
+
+### start_license_daemon
+
+Starts a background daemon that validates the license every 15 minutes. Automatically handles license revocation and expiration.
+
+```python
+from keybox_sdk.client import start_license_daemon
+import os
+
+def on_license_valid(data):
+    print(f"License is valid: {data['status']}")
+
+def on_license_invalid(data):
+    print(f"License is invalid: {data['status']}")
+    print(f"Message: {data.get('message')}")
+    os._exit(1)
+
+start_license_daemon(
+    product_name="My Product",
+    key="license-key-here",
+    api_url="https://api-keybox.vercel.app",  # optional
+    endpoint="/validate",  # optional
+    on_start=on_license_valid,  # optional
+    on_stop=on_license_invalid  # optional
+)
+```
+
+#### Parameters
+
+<ParamField path="product_name" type="str" required>
+  The name of your product as configured in KeyBox dashboard
+</ParamField>
+
+<ParamField path="key" type="str" required>
+  The license key to validate
+</ParamField>
+
+<ParamField path="api_url" type="str" default="https://api-keybox.vercel.app">
+  The KeyBox API base URL
+</ParamField>
+
+<ParamField path="endpoint" type="str" default="/validate">
+  The validation endpoint path
+</ParamField>
+
+<ParamField path="on_start" type="callable" default="None">
+  Callback function invoked when license becomes valid
+  
+  ```python
+  def on_start(data: dict) -> None:
+      pass
+  ```
+</ParamField>
+
+<ParamField path="on_stop" type="callable" default="None">
+  Callback function invoked when license becomes invalid (revoked, expired, or error)
+  
+  ```python
+  def on_stop(data: dict) -> None:
+      pass
+  ```
+</ParamField>
+
+#### Behavior
+
+<Steps>
+  <Step title="Initial validation">
+    Validates the license immediately when called
+  </Step>
+  
+  <Step title="Background thread">
+    Spawns a daemon thread that validates every **900 seconds (15 minutes)**
+  </Step>
+  
+  <Step title="State monitoring">
+    Tracks license state changes and calls callbacks when state transitions between valid and invalid
+  </Step>
+  
+  <Step title="Error handling">
+    Network errors and validation failures call `on_stop` and mark the license as invalid
+  </Step>
+</Steps>
+
+<Note>
+  The validation interval is fixed at 15 minutes. The daemon runs in a background thread and does not block your application.
+</Note>
+
+#### Example: Manual Daemon Management
+
+```python
+import os
+import signal
+import sys
+from keybox_sdk.client import start_license_daemon, stop_license_daemon
+
+def handle_invalid_license(data):
+    print(f"\n⚠ License {data['status']}: {data.get('message')}")
+    print("Application will now exit.")
+    cleanup_resources()
+    os._exit(1)
+
+# Start the daemon
+start_license_daemon(
+    product_name="My Product",
+    key=os.getenv("LICENSE_KEY"),
+    on_stop=handle_invalid_license
+)
+
+print("License daemon started")
+
+# Your application code here
+run_application()
+
+# Graceful shutdown on SIGINT
+def signal_handler(sig, frame):
+    print("\nShutting down...")
+    stop_license_daemon()
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, signal_handler)
+```
+
+---
+
+### stop_license_daemon
+
+Stops the background license validation daemon.
+
+```python
+from keybox_sdk.client import stop_license_daemon
+
+stop_license_daemon()
+```
+
+<Warning>
+  Only call this when you're shutting down your application. Stopping the daemon disables license enforcement.
+</Warning>
+
+---
+
+### protect_fastapi_app
+
+All-in-one function that protects your FastAPI application. Activates the license, starts background validation, and automatically shuts down the app if the license is revoked.
+
+```python
+from fastapi import FastAPI
+from keybox_sdk.client import protect_fastapi_app
+import os
+
+app = FastAPI()
+
+@app.get("/health")
+def health_check():
+    return {"status": "healthy"}
+
+@app.get("/api/users")
+def get_users():
+    return {"users": []}
+
+protect_fastapi_app(
+    app=app,
+    product_name="My API",
+    key=os.getenv("LICENSE_KEY"),
+    api_url="https://api-keybox.vercel.app"  # optional
+)
+```
+
+#### Parameters
+
+<ParamField path="app" type="FastAPI" required>
+  Your FastAPI application instance
+</ParamField>
+
+<ParamField path="product_name" type="str" required>
+  The name of your product as configured in KeyBox
+</ParamField>
+
+<ParamField path="key" type="str" required>
+  The license key
+</ParamField>
+
+<ParamField path="api_url" type="str" default="https://api-keybox.vercel.app">
+  The KeyBox API base URL
+</ParamField>
+
+#### Behavior
+
+<Steps>
+  <Step title="Validate app instance">
+    Ensures the provided app is a valid FastAPI instance
+  </Step>
+  
+  <Step title="Activate license">
+    Calls `activate_license()` - raises exception if activation fails
+  </Step>
+  
+  <Step title="Register startup hook">
+    Adds a startup event handler that begins background validation
+  </Step>
+  
+  <Step title="Register shutdown hook">
+    Adds a shutdown event handler that stops the validation daemon
+  </Step>
+  
+  <Step title="Hard shutdown on revocation">
+    If license becomes invalid, logs error and calls `os._exit(1)` to immediately terminate
+  </Step>
+</Steps>
+
+<Warning>
+  This function uses `os._exit(1)` for hard shutdown when license is revoked. This ensures the application cannot continue running with an invalid license.
+</Warning>
+
+#### Example: Environment Configuration
+
+```python main.py
+from fastapi import FastAPI, HTTPException
+from keybox_sdk.client import protect_fastapi_app
+from pydantic import BaseModel
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+app = FastAPI(
+    title="My Protected API",
+    description="This API is protected by KeyBox",
+    version="1.0.0"
+)
+
+class Item(BaseModel):
+    name: str
+    description: str | None = None
+
+@app.get("/")
+def read_root():
+    return {"message": "API is running"}
+
+@app.get("/api/items")
+def get_items():
+    return {"items": []}
+
+@app.post("/api/items")
+def create_item(item: Item):
+    return {"item": item, "status": "created"}
+
+# Protect the entire application
+protect_fastapi_app(
+    app=app,
+    product_name=os.getenv("PRODUCT_NAME"),
+    key=os.getenv("LICENSE_KEY"),
+    api_url=os.getenv("KEYBOX_API_URL", "https://api-keybox.vercel.app")
+)
+```
+
+```bash .env
+PRODUCT_NAME=My API
+LICENSE_KEY=kb_xxxxxxxxxxxxx
+KEYBOX_API_URL=https://api-keybox.vercel.app
+```
+
+```bash
+uvicorn main:app --host 0.0.0.0 --port 8000
+```
+
+---
+
+## Complete Examples
+
+### Example 1: Basic FastAPI Application
+
+```python app.py
+from fastapi import FastAPI, HTTPException
+from keybox_sdk.client import protect_fastapi_app
+import os
+
+app = FastAPI()
+
+@app.get("/")
+def read_root():
+    return {
+        "message": "This API is protected by KeyBox",
+        "version": "1.0.0"
+    }
+
+@app.get("/api/data")
+def get_data():
+    return {
+        "data": [1, 2, 3, 4, 5],
+        "count": 5
+    }
+
+@app.get("/api/status")
+def get_status():
+    return {"status": "operational"}
+
+try:
+    protect_fastapi_app(
+        app=app,
+        product_name="My API",
+        key=os.getenv("LICENSE_KEY")
+    )
+    print("✓ Application is protected by KeyBox")
+except Exception as e:
+    print(f"✗ Failed to protect application: {e}")
+    exit(1)
+```
+
+### Example 2: CLI Tool with Manual Control
+
+```python cli.py
+import os
+import sys
+import time
+from keybox_sdk.client import activate_license, start_license_daemon
+
+def main():
+    # Activate on startup
+    try:
+        result = activate_license(
+            product_name="My CLI Tool",
+            key=os.getenv("LICENSE_KEY")
+        )
+        print(f"✓ License activated: {result['status']}")
+        if result.get('expiresAt'):
+            print(f"  Expires: {result['expiresAt']}")
+    except Exception as e:
+        print(f"✗ License activation failed: {e}")
+        print("Please contact support with a valid license key.")
+        sys.exit(1)
+    
+    # Start background validation
+    def on_invalid(data):
+        print(f"\n⚠ License {data['status']}: {data.get('message')}")
+        print("The tool will now exit.")
+        os._exit(1)
+    
+    start_license_daemon(
+        product_name="My CLI Tool",
+        key=os.getenv("LICENSE_KEY"),
+        on_stop=on_invalid
+    )
+    
+    print("✓ License monitoring active")
+    print("Running your CLI tool...\n")
+    
+    # Your CLI tool logic here
+    run_cli_tool()
+
+def run_cli_tool():
+    """Your actual CLI tool logic"""
+    while True:
+        print("Processing...")
+        time.sleep(5)
+
+if __name__ == "__main__":
+    main()
+```
+
+### Example 3: Django Application
+
+```python yourapp/apps.py
+from django.apps import AppConfig
+from keybox_sdk.client import activate_license, start_license_daemon
+import os
+import sys
+
+class YourAppConfig(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'yourapp'
+    
+    def ready(self):
+        # Only run in main process (not in reloader)
+        if os.environ.get('RUN_MAIN') == 'true':
+            self.protect_with_keybox()
+    
+    def protect_with_keybox(self):
+        try:
+            # Activate license
+            activate_license(
+                product_name="My Django App",
+                key=os.getenv("LICENSE_KEY")
+            )
+            print("✓ License activated")
+            
+            # Start daemon
+            def on_invalid(data):
+                print(f"\n⚠ License {data['status']}")
+                print("Application will shutdown.")
+                os._exit(1)
+            
+            start_license_daemon(
+                product_name="My Django App",
+                key=os.getenv("LICENSE_KEY"),
+                on_stop=on_invalid
+            )
+            print("✓ License monitoring active")
+            
+        except Exception as e:
+            print(f"✗ License protection failed: {e}")
+            sys.exit(1)
+```
+
+### Example 4: Flask Application
+
+```python app.py
+from flask import Flask, jsonify
+from keybox_sdk.client import activate_license, start_license_daemon
+import os
+import sys
+
+app = Flask(__name__)
+
+@app.route('/')
+def index():
+    return jsonify({"message": "Hello from licensed Flask app"})
+
+@app.route('/api/data')
+def get_data():
+    return jsonify({"data": [1, 2, 3, 4, 5]})
+
+if __name__ == '__main__':
+    # Activate license before starting
+    try:
+        activate_license(
+            product_name="My Flask App",
+            key=os.getenv("LICENSE_KEY")
+        )
+        print("✓ License activated")
+    except Exception as e:
+        print(f"✗ Failed to activate: {e}")
+        sys.exit(1)
+    
+    # Start daemon
+    def on_revoke(data):
+        print(f"\n⚠ License revoked: {data['status']}")
+        os._exit(1)
+    
+    start_license_daemon(
+        product_name="My Flask App",
+        key=os.getenv("LICENSE_KEY"),
+        on_stop=on_revoke
+    )
+    print("✓ License monitoring started")
+    
+    # Run Flask app
+    app.run(host='0.0.0.0', port=5000)
+```
+
+### Example 5: Data Science Script
+
+```python analyze.py
+import os
+import sys
+import pandas as pd
+from keybox_sdk.client import activate_license, start_license_daemon
+
+def main():
+    # Protect your data science script
+    try:
+        activate_license(
+            product_name="My Analysis Tool",
+            key=os.getenv("LICENSE_KEY")
+        )
+        print("✓ Licensed to run analysis")
+    except Exception as e:
+        print(f"✗ License validation failed: {e}")
+        print("Cannot run analysis without valid license.")
+        sys.exit(1)
+    
+    # Start monitoring in background
+    start_license_daemon(
+        product_name="My Analysis Tool",
+        key=os.getenv("LICENSE_KEY"),
+        on_stop=lambda _: os._exit(1)
+    )
+    
+    # Run your analysis
+    print("Running data analysis...")
+    df = pd.read_csv('data.csv')
+    results = perform_analysis(df)
+    results.to_csv('results.csv')
+    print("✓ Analysis complete")
+
+def perform_analysis(df):
+    # Your analysis logic
+    return df.describe()
+
+if __name__ == "__main__":
+    main()
+```
+
+---
+
+## Logging
+
+The SDK logs all license-related events to stdout:
+
+```
+[2026-03-05T10:30:00.000000] [KEYBOX] [INFO] Activating license {'product_name': 'My API'}
+[2026-03-05T10:30:01.000000] [KEYBOX] [INFO] License activated {'status': 'active', 'expiresAt': '2027-03-05'}
+[2026-03-05T10:30:01.100000] [KEYBOX] [INFO] License daemon started {'interval_seconds': 900}
+```
+
+Log levels:
+- `INFO` - Normal operations and state changes
+- `ERROR` - Validation errors and failures
+
+---
+
+## Troubleshooting
+
+### ValueError: "product_name and key are required"
+
+Make sure you're passing both parameters:
+
+```python
+activate_license(
+    product_name="My Product",  # Required
+    key="kb_xxxxxxxxxxxxx"       # Required
+)
+```
+
+### RuntimeError: "License server did not return JSON"
+
+This usually means:
+1. The API URL is incorrect
+2. There's a network connectivity issue
+3. A proxy is intercepting the request
+
+Check your `api_url` parameter and network connectivity.
+
+### License validation keeps failing
+
+Check:
+1. License key is correct
+2. Product name matches exactly (case-sensitive)
+3. License is not expired or revoked in the dashboard
+4. Server can reach `https://api-keybox.vercel.app`
+5. No firewall blocking HTTPS requests
+
+### App doesn't shutdown on revocation
+
+Make sure:
+1. You've provided an `on_stop` callback
+2. The callback calls `os._exit(1)` for hard shutdown
+3. No exception handlers are catching the exit
+
+### Thread safety concerns
+
+The daemon runs in a separate thread. If your application is multi-threaded, ensure:
+1. License key and product name don't change during runtime
+2. Shutdown logic is thread-safe
+3. Use `os._exit()` instead of `sys.exit()` for immediate shutdown
+
+---
+
+## Type Hints
+
+The SDK supports Python 3.8+ with type hints:
+
+```python
+from typing import Callable, Dict, Any
+from keybox_sdk.client import activate_license, start_license_daemon
+import os
+
+def handle_invalid(data: Dict[str, Any]) -> None:
+    print(f"Invalid: {data['status']}")
+    os._exit(1)
+
+result: Dict[str, Any] = activate_license(
+    product_name="My Product",
+    key=os.getenv("LICENSE_KEY") or ""
+)
+
+start_license_daemon(
+    product_name="My Product",
+    key=os.getenv("LICENSE_KEY") or "",
+    on_stop=handle_invalid
+)
+```
+
+---
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Node.js SDK" icon="node-js" href="/sdks/node-sdk">
+    Explore the Node.js SDK for Express apps
+  </Card>
+  <Card title=".NET SDK" icon="microsoft" href="/sdks/dotnet-sdk">
+    Learn about the .NET SDK for ASP.NET Core
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference">
+    Complete API endpoint documentation
+  </Card>
+  <Card title="Examples" icon="flask" href="/examples">
+    More integration examples and patterns
+  </Card>
+</CardGroup>

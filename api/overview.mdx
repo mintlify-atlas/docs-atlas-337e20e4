@@ -1,0 +1,131 @@
+---
+title: API Overview
+description: Introduction to the KeyBox API - endpoints, versioning, and general usage
+---
+
+## Introduction
+
+The KeyBox API provides a comprehensive REST API for managing software licenses, clients, and projects. The API enables you to validate licenses, activate them on specific machines, create new licenses, and manage your entire licensing infrastructure.
+
+## Base URL
+
+All API requests should be made to your KeyBox server instance:
+
+```
+https://your-keybox-server.com
+```
+
+<Note>
+  The base URL depends on your deployment. If you're running locally, use `http://localhost:3000`
+</Note>
+
+## API Versioning
+
+The current API does not use versioning prefixes. All endpoints are available at the root level with their respective paths:
+
+- `/auth` - Authentication endpoints
+- `/license` - License management endpoints
+- `/validate` - License validation endpoints
+- `/clients` - Client management endpoints
+- `/projects` - Project management endpoints
+- `/dashboard` - Dashboard data endpoints
+
+## Response Format
+
+All API responses follow a consistent JSON format:
+
+### Success Response
+
+```json
+{
+  "success": true,
+  "message": "Operation successful",
+  "data": { ... }
+}
+```
+
+### Error Response
+
+```json
+{
+  "success": false,
+  "message": "Error description",
+  "error": "Detailed error message"
+}
+```
+
+## Status Codes
+
+The API uses standard HTTP status codes:
+
+| Code | Description |
+|------|-------------|
+| 200 | Success |
+| 201 | Created |
+| 400 | Bad Request - Invalid parameters |
+| 401 | Unauthorized - Missing or invalid authentication |
+| 403 | Forbidden - Valid auth but insufficient permissions |
+| 404 | Not Found - Resource doesn't exist |
+| 409 | Conflict - Resource already exists |
+| 429 | Too Many Requests - Rate limit exceeded |
+| 500 | Internal Server Error |
+
+## Rate Limiting
+
+License validation endpoints (`/validate` routes) are rate-limited to prevent abuse:
+
+- **Window**: 15 minutes
+- **Max Requests**: 5 requests per IP address
+- **Headers**: Standard rate limit headers are included in responses
+
+<Warning>
+  When rate limit is exceeded, you'll receive a 429 status with message: "too many requests, please try again later."
+</Warning>
+
+## Error Handling
+
+The API includes comprehensive error handling:
+
+```json
+{
+  "success": false,
+  "message": "Operation failed",
+  "error": "Detailed error information"
+}
+```
+
+Common error scenarios:
+
+- **Validation errors** - Missing required fields or invalid data formats
+- **Authentication errors** - Invalid or expired tokens
+- **Authorization errors** - Insufficient permissions
+- **Resource errors** - Not found or already exists
+- **Server errors** - Internal processing failures
+
+## CORS Configuration
+
+The API supports CORS with the following configuration:
+
+- **Origin**: All origins (`*`)
+- **Methods**: GET, POST, PUT, DELETE, PATCH
+
+<Note>
+  In production, it's recommended to restrict CORS to specific origins for security.
+</Note>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="key" href="/api/authentication">
+    Learn how to authenticate API requests
+  </Card>
+  <Card title="Validate License" icon="shield-check" href="/api/validate-license">
+    Validate license keys in your application
+  </Card>
+  <Card title="Create License" icon="plus" href="/api/create-license">
+    Generate new license keys
+  </Card>
+  <Card title="Dashboard" icon="chart-line" href="/api/dashboard">
+    Fetch dashboard data
+  </Card>
+</CardGroup>

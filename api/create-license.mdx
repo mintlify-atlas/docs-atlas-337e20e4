@@ -1,0 +1,406 @@
+---
+title: Create License
+description: Create a new license key for a client and project
+---
+
+## Overview
+
+The create license endpoint generates a new license key associated with a specific client and project. This is an authenticated endpoint that requires a valid JWT token.
+
+## Endpoint
+
+```
+POST /license/create
+```
+
+<Warning>
+  This endpoint requires authentication. Include a valid JWT token in the Authorization header.
+</Warning>
+
+## Authentication
+
+Include the JWT token in the Authorization header:
+
+```
+Authorization: Bearer <your-jwt-token>
+```
+
+## Request
+
+### Request Body
+
+<ParamField body="duration" type="number" required>
+  License duration in months (1-12)
+</ParamField>
+
+<ParamField body="clientId" type="string" required>
+  MongoDB ObjectId of the client
+</ParamField>
+
+<ParamField body="projectId" type="string" required>
+  MongoDB ObjectId of the project
+</ParamField>
+
+<ParamField body="services" type="array">
+  Array of services included in the license (e.g., ["Hosting", "Domain"]). Defaults to ["Hosting"] if not provided.
+</ParamField>
+
+### Example Request
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://your-keybox-server.com/license/create \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -d '{
+    "duration": 12,
+    "clientId": "60f7b3b3e6b3a72e8c8e4a1a",
+    "projectId": "60f7b3b3e6b3a72e8c8e4a1b",
+    "services": ["Hosting", "Domain"]
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://your-keybox-server.com/license/create', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`
+  },
+  body: JSON.stringify({
+    duration: 12,
+    clientId: '60f7b3b3e6b3a72e8c8e4a1a',
+    projectId: '60f7b3b3e6b3a72e8c8e4a1b',
+    services: ['Hosting', 'Domain']
+  })
+});
+
+const data = await response.json();
+```
+
+```python Python
+import requests
+
+headers = {
+    'Authorization': f'Bearer {token}'
+}
+
+response = requests.post(
+    'https://your-keybox-server.com/license/create',
+    headers=headers,
+    json={
+        'duration': 12,
+        'clientId': '60f7b3b3e6b3a72e8c8e4a1a',
+        'projectId': '60f7b3b3e6b3a72e8c8e4a1b',
+        'services': ['Hosting', 'Domain']
+    }
+)
+
+data = response.json()
+```
+</CodeGroup>
+
+## Response
+
+### Success Response
+
+<ResponseField name="message" type="string">
+  Success message
+</ResponseField>
+
+<ResponseField name="license" type="object">
+  The created license object
+</ResponseField>
+
+<Expandable title="license object">
+  <ResponseField name="key" type="string">
+    The generated license key (format: KB-{projectId}-XXXX-XXXX-XXXX)
+  </ResponseField>
+
+  <ResponseField name="duration" type="number">
+    License duration in months
+  </ResponseField>
+
+  <ResponseField name="issuedAt" type="date">
+    When the license was created
+  </ResponseField>
+
+  <ResponseField name="expiresAt" type="date">
+    When the license will expire (calculated as issuedAt + duration)
+  </ResponseField>
+
+  <ResponseField name="status" type="string">
+    License status (initially "PENDING")
+  </ResponseField>
+
+  <ResponseField name="services" type="array">
+    Array of included services
+  </ResponseField>
+
+  <ResponseField name="user" type="string">
+    User ID who created the license
+  </ResponseField>
+
+  <ResponseField name="client" type="string">
+    Client ID the license is for
+  </ResponseField>
+
+  <ResponseField name="project" type="string">
+    Project ID the license is for
+  </ResponseField>
+
+  <ResponseField name="_id" type="string">
+    MongoDB ObjectId of the license
+  </ResponseField>
+</Expandable>
+
+### Example Response
+
+```json
+{
+  "message": "License created",
+  "license": {
+    "key": "KB-60f7b3b3e6b3a72e8c8e4a1b-A1B2-C3D4-E5F6",
+    "duration": 12,
+    "issuedAt": "2024-01-01T00:00:00.000Z",
+    "expiresAt": "2025-01-01T00:00:00.000Z",
+    "status": "PENDING",
+    "services": ["Hosting", "Domain"],
+    "user": "60f7b3b3e6b3a72e8c8e4a1a",
+    "client": "60f7b3b3e6b3a72e8c8e4a1a",
+    "project": "60f7b3b3e6b3a72e8c8e4a1b",
+    "_id": "60f7b3b3e6b3a72e8c8e4a1c"
+  }
+}
+```
+
+## License Key Format
+
+License keys are automatically generated using this format:
+
+```
+KB-{projectId}-{random}-{random}-{random}
+```
+
+- **KB**: KeyBox prefix
+- **projectId**: The project's MongoDB ObjectId
+- **random segments**: Three random alphanumeric segments for uniqueness
+
+Example: `KB-60f7b3b3e6b3a72e8c8e4a1b-A1B2-C3D4-E5F6`
+
+## License Status
+
+All newly created licenses start with status `PENDING`:
+
+- **PENDING**: License created but not yet activated
+- **ACTIVE**: License activated on a machine (requires activation endpoint)
+- **EXPIRED**: License duration has elapsed
+- **REVOKED**: License manually revoked by developer
+
+<Note>
+  Licenses must be activated using the [activate endpoint](/api/activate-license) before they can be used.
+</Note>
+
+## Services
+
+The `services` field defines what services are included in the license. Available options:
+
+- **Hosting**: Web hosting service
+- **Domain**: Domain registration/management
+
+You can include multiple services in a single license:
+
+```json
+{
+  "services": ["Hosting", "Domain"]
+}
+```
+
+If not specified, defaults to `["Hosting"]`.
+
+## Error Responses
+
+### Invalid Duration
+
+**Status Code**: 400
+
+```json
+{
+  "message": "Invalid duration"
+}
+```
+
+<Note>
+  Duration must be between 1 and 12 months.
+</Note>
+
+### Missing Client or Project
+
+**Status Code**: 400
+
+```json
+{
+  "message": "Client & Project required"
+}
+```
+
+### Unauthorized
+
+**Status Code**: 401
+
+```json
+{
+  "message": "No token provided"
+}
+```
+
+### Server Error
+
+**Status Code**: 500
+
+```json
+{
+  "error": "Detailed error message"
+}
+```
+
+## Complete Example
+
+Here's a complete workflow for creating a license:
+
+<CodeGroup>
+```javascript JavaScript
+class LicenseManager {
+  constructor(serverUrl, authToken) {
+    this.serverUrl = serverUrl;
+    this.authToken = authToken;
+  }
+
+  async createLicense(clientId, projectId, duration, services = ['Hosting']) {
+    try {
+      const response = await fetch(`${this.serverUrl}/license/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.authToken}`
+        },
+        body: JSON.stringify({
+          duration,
+          clientId,
+          projectId,
+          services
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('License created:', data.license.key);
+      console.log('Status:', data.license.status);
+      console.log('Expires:', new Date(data.license.expiresAt));
+      
+      return data.license;
+    } catch (error) {
+      console.error('Failed to create license:', error);
+      throw error;
+    }
+  }
+}
+
+// Usage
+const manager = new LicenseManager(
+  'https://your-keybox-server.com',
+  'your-jwt-token'
+);
+
+const license = await manager.createLicense(
+  '60f7b3b3e6b3a72e8c8e4a1a', // clientId
+  '60f7b3b3e6b3a72e8c8e4a1b', // projectId
+  12, // duration in months
+  ['Hosting', 'Domain'] // services
+);
+
+console.log('Share this key with your client:', license.key);
+```
+
+```python Python
+import requests
+from datetime import datetime
+
+class LicenseManager:
+    def __init__(self, server_url, auth_token):
+        self.server_url = server_url
+        self.auth_token = auth_token
+
+    def create_license(self, client_id, project_id, duration, services=['Hosting']):
+        try:
+            headers = {
+                'Authorization': f'Bearer {self.auth_token}'
+            }
+            
+            response = requests.post(
+                f'{self.server_url}/license/create',
+                headers=headers,
+                json={
+                    'duration': duration,
+                    'clientId': client_id,
+                    'projectId': project_id,
+                    'services': services
+                }
+            )
+            
+            response.raise_for_status()
+            data = response.json()
+            
+            license_data = data['license']
+            print(f"License created: {license_data['key']}")
+            print(f"Status: {license_data['status']}")
+            print(f"Expires: {datetime.fromisoformat(license_data['expiresAt'].replace('Z', '+00:00'))}")
+            
+            return license_data
+        except Exception as error:
+            print(f'Failed to create license: {error}')
+            raise
+
+# Usage
+manager = LicenseManager(
+    'https://your-keybox-server.com',
+    'your-jwt-token'
+)
+
+license_data = manager.create_license(
+    '60f7b3b3e6b3a72e8c8e4a1a',  # client_id
+    '60f7b3b3e6b3a72e8c8e4a1b',  # project_id
+    12,  # duration in months
+    ['Hosting', 'Domain']  # services
+)
+
+print(f"Share this key with your client: {license_data['key']}")
+```
+</CodeGroup>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Validate Input" icon="check">
+    Validate client and project IDs exist before creating licenses
+  </Card>
+  <Card title="Reasonable Duration" icon="calendar">
+    Set appropriate license durations based on your business model
+  </Card>
+  <Card title="Track Services" icon="list">
+    Use the services field to clearly define what's included
+  </Card>
+  <Card title="Store Keys Securely" icon="lock">
+    Securely store and distribute license keys to clients
+  </Card>
+</CardGroup>
+
+## See Also
+
+- [Activate License](/api/activate-license) - Activate a newly created license
+- [Validate License](/api/validate-license) - Check license validity
+- [Revoke License](/api/revoke-license) - Revoke an existing license
+- [Projects](/api/projects) - Create projects with licenses
